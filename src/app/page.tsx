@@ -5,6 +5,7 @@ import { Avatar } from "@/components/Avatar";
 import { ItemCard } from "@/components/ItemCard";
 import { ListingPic } from "@/components/ListingPic";
 import { SortSelect } from "@/components/SortSelect";
+import { ScrollRail } from "@/components/ScrollRail";
 import { CATEGORIES, DEPARTMENTS, HOME_CATEGORY_RAIL, deptLabel, getCategory, type DeptKey } from "@/lib/catalog";
 import {
   browseListings,
@@ -152,7 +153,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<Sea
               </Link>
             )}
           </div>
-          <div className="rail">
+          <ScrollRail label="categories">
             {railCats.map((c) => (
               <Link
                 key={c.slug}
@@ -166,7 +167,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<Sea
                 {c.name}
               </Link>
             ))}
-          </div>
+          </ScrollRail>
         </section>
 
         {!filtered && stores.length > 0 && (
@@ -177,7 +178,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<Sea
                 <p>Sellers with the most items right now</p>
               </div>
             </div>
-            <div className="rail">
+            <ScrollRail label="featured stores">
               {stores.map((s) => (
                 <Link key={s.id} href={`/u/${s.username}`} className="store">
                   <Avatar name={s.full_name} url={s.avatar_url} seed={s.username} />
@@ -188,7 +189,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<Sea
                   </span>
                 </Link>
               ))}
-            </div>
+            </ScrollRail>
           </section>
         )}
 
@@ -200,11 +201,11 @@ export default async function Home({ searchParams }: { searchParams: Promise<Sea
                 <p>Most saved right now</p>
               </div>
             </div>
-            <div className="rail trend">
+            <ScrollRail className="trend" label="trending items">
               {trending.map((it) => (
                 <ItemCard key={it.id} item={it} saved={saved.has(it.id)} />
               ))}
-            </div>
+            </ScrollRail>
           </section>
         )}
 
@@ -244,7 +245,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<Sea
                 <h2>Sellers</h2>
               </div>
             </div>
-            <div className="rail">
+            <ScrollRail label="sellers">
               {sellers.map((s) => (
                 <Link key={s.id} href={`/u/${s.username}`} className="store">
                   <Avatar name={s.full_name} url={s.avatar_url} seed={s.username} />
@@ -254,7 +255,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<Sea
                   </span>
                 </Link>
               ))}
-            </div>
+            </ScrollRail>
           </section>
         )}
 

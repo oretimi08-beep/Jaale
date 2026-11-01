@@ -144,7 +144,17 @@ section.blk { padding-block: 22px 4px; }
 .sh p { margin: 2px 0 0; color: var(--muted); font-size: 13px; }
 .link { border: 0; background: none; color: var(--primary); font-weight: 600; padding: 0; white-space: nowrap; }
 .link:hover { text-decoration: underline; }
-.rail { display: flex; gap: 14px; overflow-x: auto; padding-bottom: 8px; scroll-snap-type: x proximity; }
+/* Sideways rows: padding leaves room for the store rings so they aren't clipped; arrows replace the scrollbar. */
+.rail { display: flex; gap: 14px; overflow-x: auto; padding: 8px 6px; margin: -8px -6px 0; scroll-snap-type: x proximity; scroll-padding-inline: 6px; scrollbar-width: none; }
+.rail::-webkit-scrollbar { display: none; }
+.rail:focus-visible { outline-offset: -3px; }
+.rail-wrap { position: relative; }
+.rail-arrow { position: absolute; top: 50%; transform: translateY(-50%); z-index: 5; width: 40px; height: 40px; border-radius: 50%; border: 1px solid var(--line); background: var(--surface); color: var(--fg); font-size: 26px; line-height: 1; display: grid; place-items: center; padding: 0 0 3px; box-shadow: 0 4px 14px rgba(0, 0, 0, 0.14); }
+.rail-arrow:hover { background: var(--bg); }
+.rail-arrow.left { left: -10px; }
+.rail-arrow.right { right: -10px; }
+.rail-wrap:has(.trend) .rail-arrow { top: 40%; }
+@media (max-width: 640px) { .rail-arrow { width: 34px; height: 34px; font-size: 22px; } .rail-arrow.left { left: -6px; } .rail-arrow.right { right: -6px; } }
 .cat { flex: none; width: 84px; display: grid; justify-items: center; gap: 6px; font-size: 12.5px; font-weight: 500; text-align: center; scroll-snap-align: start; }
 .cat span.ci { color: var(--primary); width: 64px; height: 64px; border-radius: 18px; display: grid; place-items: center; background: var(--surface); border: 1px solid var(--line); }
 .cat span.ci svg { width: 34px; height: 34px; }
