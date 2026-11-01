@@ -54,19 +54,29 @@ async function issueRefund(order: OrderRow, reason: string) {
 }
 
 /** Asks Paystack whether this order was paid, and records it if so. Safe to call many times. */
-export async function confirmPayment(orderId: string): Promise<{ status: OrderStatus; message?: string }> {
+export async function confirmPayment(
+  orderId: string,
+  opts: { retries?: number } = {},
+): Promise<{ status: OrderStatus; message?: string; stillChecking?: boolean }> {
   const order = await load(orderId);
   if (!order) return { status: "cancelled", message: "Order not found." };
   if (order.status !== "pending_payment") return { status: order.status };
 
+  // Right after the buyer is sent back, Paystack can still say "ongoing" for a second or two.
   let payment;
-  try {
-    payment = await verifyPayment(order.paystack_reference);
-  } catch {
-    return { status: order.status, message: "We couldn't reach Paystack to check your payment. Refresh in a moment." };
+  for (let attempt = 0; ; attempt++) {
+    try {
+      payment = await verifyPayment(order.paystack_reference);
+    } catch {
+      return { status: order.status, message: "We couldn't reach Paystack to check your payment. Refresh in a moment." };
+    }
+    const unsettled = payment.status === "ongoing" || payment.status === "pending" || payment.status === "processing";
+    if (!unsettled || attempt >= (opts.retries ?? 0)) break;
+    await new Promise((r) => setTimeout(r, 1500));
   }
-  if (payment.status === "abandoned" || payment.status === "ongoing" || payment.status === "pending") {
-    return { status: order.status };
+  if (payment.status === "abandoned" || payment.status === "ongoing" || payment.status === "pending" || payment.status === "processing") {
+    const fresh = await load(order.id); // the webhook may have got there first
+    return { status: fresh?.status ?? order.status, stillChecking: payment.status !== "abandoned" };
   }
   const check = paymentMatches(order, payment);
   if (!check.ok) {

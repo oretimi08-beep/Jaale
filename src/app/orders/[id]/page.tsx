@@ -6,6 +6,7 @@ import { STATUS_LABEL } from "@/lib/orders";
 import { autoRelease, confirmPayment, type OrderRow } from "@/lib/order-service";
 import { createClient } from "@/lib/supabase/server";
 import { OrderActions } from "@/components/OrderActions";
+import { AutoRefresh } from "@/components/AutoRefresh";
 
 export const metadata = { title: "Order" };
 
@@ -29,18 +30,19 @@ export default async function OrderPage({ params, searchParams }: { params: Prom
   if (!order) notFound();
 
   // Coming back from Paystack (or just opening an unpaid order): check with Paystack.
+  const { paid } = await searchParams;
   let payMessage: string | undefined;
+  let stillChecking = false;
   if (order.status === "pending_payment" && order.buyer_id === viewer.userId) {
-    const res = await confirmPayment(order.id);
+    const res = await confirmPayment(order.id, { retries: paid ? 3 : 0 });
     payMessage = res.message;
+    stillChecking = !!res.stillChecking && !!paid;
     order = (await read())!;
   }
   if (order.status === "delivered") {
     await autoRelease().catch(() => 0);
     order = (await read())!;
   }
-  const { paid } = await searchParams;
-
   const role = order.buyer_id === viewer.userId ? "buyer" : "seller";
   const { data: other } = await supabase
     .from("profiles")
@@ -85,6 +87,12 @@ export default async function OrderPage({ params, searchParams }: { params: Prom
         </div>
 
         {payMessage && <div className="note err"><b>Payment.</b> {payMessage}</div>}
+        {stillChecking && order.status === "pending_payment" && (
+          <div className="note warm">
+            <b>Confirming your payment with Paystack…</b> This usually takes a few seconds.
+            <AutoRefresh seconds={4} />
+          </div>
+        )}
         {paid && s === "paid_held" && role === "buyer" && (
           <div className="note"><b>Payment received.</b> Your money is held safely. {other?.full_name} has been told to send your item.</div>
         )}
