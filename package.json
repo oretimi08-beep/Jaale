@@ -9,7 +9,8 @@
     "lint": "eslint",
     "db:migrate": "node --env-file=.env.local scripts/migrate.mjs",
     "db:seed": "node --env-file=.env.local scripts/seed.mjs",
-    "format": "prettier --write src"
+    "format": "prettier --write src",
+    "test": "vitest run"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.7",
@@ -22,7 +23,7 @@
   },
   "devDependencies": {
     "@tailwindcss/turbopack": "^4",
-    "@types/node": "^20",
+    "@types/node": "^24.19.2",
     "@types/pg": "^8.23.1",
     "@types/react": "^19",
     "@types/react-dom": "^19",
@@ -31,6 +32,7 @@
     "pg": "^8.23.1",
     "prettier": "^3.9.10",
     "tailwindcss": "^4",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^5.0.5"
   }
 }

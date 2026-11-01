@@ -33,7 +33,7 @@ export default function BuyerProtectionPage() {
           <li>Keep chats in the app, so we can help if something goes wrong.</li>
           <li>For appliances, plug them in and test them before confirming.</li>
         </ul>
-        <p className="sample">Payments are not switched on yet in this preview.</p>
+        <p className="sample">Payments run in Paystack test mode during the preview, so no real money moves.</p>
       </div>
     </main>
   );

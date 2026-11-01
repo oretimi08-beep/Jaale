@@ -67,8 +67,8 @@ export function Footer() {
           </div>
         </div>
         <p className="fine wrap">
-          Early preview. Payments are not switched on yet, so nothing can be bought for real. Buyer protection is ₦300 + 5%
-          of the item price.
+          Early preview. Payments run in Paystack test mode, so no real money moves yet. Buyer protection is ₦300 + 5% of
+          the item price.
         </p>
       </footer>
     </>

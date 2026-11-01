@@ -105,8 +105,8 @@ export default async function ItemPage({ params }: Props) {
                   >
                     Make an offer
                   </ComingSoonButton>
-                  {sold ? (
-                    <button className="btn" disabled>Sold</button>
+                  {item.status !== "active" ? (
+                    <button className="btn" disabled>{sold ? "Sold" : "Reserved"}</button>
                   ) : (
                     <Link
                       className="btn"
