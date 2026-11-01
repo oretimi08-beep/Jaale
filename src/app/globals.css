@@ -32,6 +32,7 @@
     --muted: #a9ae98;
     --on-primary: #13160f;
     --scrim: rgba(0, 0, 0, 0.6);
+    --hero-em: #6a5310;
     color-scheme: dark;
   }
 }
@@ -48,6 +49,7 @@
   --muted: #a9ae98;
   --on-primary: #13160f;
   --scrim: rgba(0, 0, 0, 0.6);
+  --hero-em: #6a5310;
   color-scheme: dark;
 }
 
@@ -124,7 +126,7 @@ h1, h2, h3 { font-family: var(--font-display); text-wrap: balance; margin: 0; li
 .hero::before { content: ""; position: absolute; inset: 0; opacity: 0.12; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='56' height='56' viewBox='0 0 56 56'%3E%3Cg fill='none' stroke='%23fff' stroke-width='2'%3E%3Ccircle cx='14' cy='14' r='8'/%3E%3Ccircle cx='14' cy='14' r='3'/%3E%3Cpath d='M30 6l20 16M30 22l20-16'/%3E%3Cpath d='M6 34h16M6 42h16M6 50h16'/%3E%3Ccircle cx='42' cy='42' r='9' stroke-dasharray='3 3'/%3E%3C/g%3E%3C/svg%3E"); }
 .hero .wrap { position: relative; display: grid; grid-template-columns: 1.25fr 1fr; gap: 28px; padding-block: 32px; align-items: center; }
 .hero h1 { font-size: clamp(28px, 4.4vw, 46px); font-weight: 800; letter-spacing: -0.03em; }
-.hero h1 em { font-style: normal; color: var(--accent); }
+.hero h1 em { font-style: normal; color: var(--hero-em, var(--accent)); }
 .hero p { max-width: 48ch; opacity: 0.9; font-size: 16px; margin: 12px 0 18px; }
 .hero .cta { display: flex; gap: 10px; flex-wrap: wrap; }
 .hero .btn { background: var(--accent); color: var(--on-accent); }
