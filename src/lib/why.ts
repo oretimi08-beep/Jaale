@@ -6,4 +6,6 @@ export const WHY: Record<string, string> = {
   following: "Sign in to see new items from people you follow.",
   sell: "Sign in to sell. Listing is free and you keep 100% of the price.",
   orders: "Sign in to see your orders.",
+  offer: "Sign in to make an offer. The seller can accept, decline or counter.",
+  message: "Sign in to message the seller. Chats stay in the app.",
 };

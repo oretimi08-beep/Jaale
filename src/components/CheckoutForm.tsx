@@ -13,12 +13,14 @@ const PICKUP = new Set(["self_pickup", "pickup_point"]);
 
 export function CheckoutForm({
   item,
+  itemKobo,
   bulky,
   testMode,
   ready,
   defaultPhone,
 }: {
   item: Listing;
+  itemKobo: number;
   bulky: boolean;
   testMode: boolean;
   ready: boolean;
@@ -30,8 +32,9 @@ export function CheckoutForm({
   const [choice, setChoice] = useState(f.delivery ?? options[0].key);
   const [method, setMethod] = useState(f.method ?? "card");
   const delivery = options.find((o) => o.key === choice)!.kobo;
-  const fee = protectionFee(item.price_kobo);
-  const total = item.price_kobo + fee + delivery;
+  const fee = protectionFee(itemKobo);
+  const total = itemKobo + fee + delivery;
+  const offerPrice = itemKobo < item.price_kobo;
 
   return (
     <form action={action} className="panel">
@@ -92,7 +95,10 @@ export function CheckoutForm({
       </label>
 
       <div className="lines">
-        <div className="line"><span>Item</span><span className="num">{naira(item.price_kobo)}</span></div>
+        <div className="line">
+          <span>Item{offerPrice && <><br /><small>Your accepted offer (was {naira(item.price_kobo)})</small></>}</span>
+          <span className="num">{naira(itemKobo)}</span>
+        </div>
         <div className="line">
           <span>Buyer protection<br /><small>₦300 + 5%, covers refunds</small></span>
           <span className="num">{naira(fee)}</span>

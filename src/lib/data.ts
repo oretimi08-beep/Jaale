@@ -2,7 +2,7 @@ import "server-only";
 import { cache } from "react";
 import { connection } from "next/server";
 import { createClient } from "./supabase/server";
-import type { Listing, Profile, ProfileLite, ProfileStats, Viewer } from "./types";
+import type { Listing, Profile, ProfileLite, ProfileStats, Ratings, Viewer } from "./types";
 import type { DeptKey } from "./catalog";
 
 export const LISTING_SELECT =
@@ -30,8 +30,46 @@ export const getViewer = cache(async (): Promise<Viewer | null> => {
   const claims = data?.claims;
   if (!claims?.sub) return null;
   const { data: profile } = await supabase.from("profiles").select("*").eq("id", claims.sub).maybeSingle();
-  return { userId: claims.sub, email: (claims.email as string) ?? null, profile: (profile as Profile) ?? null };
+  const email = ((claims.email as string) ?? "").toLowerCase() || null;
+  // Admins are listed by email in ADMIN_EMAILS. Signing in needs a confirmed email, so nobody can claim one.
+  const admins = (process.env.ADMIN_EMAILS ?? "").toLowerCase().split(",").map((e) => e.trim()).filter(Boolean);
+  return {
+    userId: claims.sub,
+    email,
+    profile: (profile as Profile) ?? null,
+    isAdmin: !!email && admins.includes(email),
+    banned: !!(profile as Profile | null)?.banned_at,
+  };
 });
+
+/** The signed-in person if they have a profile and aren't suspended; otherwise a reason. */
+export async function activeViewer(): Promise<{ viewer: Viewer & { profile: Profile }; error?: undefined } | { viewer?: undefined; error: "signin" | "banned" }> {
+  const viewer = await getViewer();
+  if (!viewer?.profile) return { error: "signin" };
+  if (viewer.banned) return { error: "banned" };
+  return { viewer: viewer as Viewer & { profile: Profile } };
+}
+
+export const BANNED_MESSAGE = "Your account is suspended. Contact Jaale support if you think this is a mistake.";
+
+export async function getRatings(profileId: string): Promise<Ratings> {
+  const supabase = await createClient();
+  const { data } = await supabase.from("profile_ratings").select("*").eq("id", profileId).maybeSingle();
+  return (data as Ratings) ?? { seller_avg: null, seller_count: 0, buyer_avg: null, buyer_count: 0 };
+}
+
+/** How many conversations have a message you haven't read yet. */
+export async function unreadCount(userId: string): Promise<number> {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("conversations")
+    .select("buyer_id, seller_id, last_message_at, buyer_read_at, seller_read_at")
+    .or(`buyer_id.eq.${userId},seller_id.eq.${userId}`)
+    .limit(200);
+  return (data ?? []).filter((c) =>
+    c.buyer_id === userId ? c.last_message_at > c.buyer_read_at : c.last_message_at > c.seller_read_at,
+  ).length;
+}
 
 export const getSavedIds = cache(async (): Promise<Set<string>> => {
   const viewer = await getViewer();

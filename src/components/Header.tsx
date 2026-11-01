@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Suspense } from "react";
-import { getSavedIds, getViewer } from "@/lib/data";
+import { getSavedIds, getViewer, unreadCount } from "@/lib/data";
 import { BRAND } from "@/lib/config";
 import { DeptTabs } from "./DeptTabs";
 import { SearchBox } from "./SearchBox";
@@ -18,6 +18,7 @@ export function Logo() {
 export async function Header() {
   const viewer = await getViewer();
   const saved = viewer?.profile ? (await getSavedIds()).size : 0;
+  const unread = viewer?.profile ? await unreadCount(viewer.userId) : 0;
 
   return (
     <header className="site-header">
@@ -32,6 +33,12 @@ export async function Header() {
           </svg>
           {saved > 0 && <span className="n">{saved}</span>}
         </Link>
+        <Link href="/messages" className="icon" aria-label={unread ? `Messages, ${unread} unread` : "Messages"}>
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+            <path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.4A8 8 0 1 1 21 12z" />
+          </svg>
+          {unread > 0 && <span className="n">{unread}</span>}
+        </Link>
         <Link href="/orders" className="icon hide-sm" aria-label="My orders">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
             <path d="M3 7h18l-2 13H5z" />
@@ -44,6 +51,7 @@ export async function Header() {
             username={viewer.profile.username}
             avatarUrl={viewer.profile.avatar_url}
             savedCount={saved}
+            isAdmin={viewer.isAdmin}
           />
         ) : viewer ? (
           <Link href="/signup/profile" className="btn ghost">

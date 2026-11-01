@@ -12,11 +12,13 @@ export function UserMenu({
   username,
   avatarUrl,
   savedCount,
+  isAdmin,
 }: {
   name: string;
   username: string;
   avatarUrl: string | null;
   savedCount: number;
+  isAdmin?: boolean;
 }) {
   const box = useRef<HTMLDivElement>(null);
   const pathname = usePathname();
@@ -55,6 +57,8 @@ export function UserMenu({
           <Link href="/sell" role="menuitem">Sell an item</Link>
           <Link href="/saved" role="menuitem">Saved items{savedCount ? ` (${savedCount})` : ""}</Link>
           <Link href="/orders" role="menuitem">My orders</Link>
+          <Link href="/messages" role="menuitem">Messages</Link>
+          {isAdmin && <Link href="/admin" role="menuitem">Admin</Link>}
           <Link href="/settings" role="menuitem">Settings and password</Link>
           <hr />
           <ThemeToggle asMenuItem />

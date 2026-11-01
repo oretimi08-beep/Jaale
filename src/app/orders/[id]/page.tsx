@@ -34,7 +34,7 @@ export default async function OrderPage({ params, searchParams }: { params: Prom
   let payMessage: string | undefined;
   let stillChecking = false;
   if (order.status === "pending_payment" && order.buyer_id === viewer.userId) {
-    const res = await confirmPayment(order.id, { retries: paid ? 3 : 0 });
+    const res = await confirmPayment(order.id, { retries: paid ? 3 : 0, justReturned: !!paid });
     payMessage = res.message;
     stillChecking = !!res.stillChecking && !!paid;
     order = (await read())!;
@@ -52,6 +52,10 @@ export default async function OrderPage({ params, searchParams }: { params: Prom
   const { data: dispute } = order.status === "disputed"
     ? await supabase.from("disputes").select("reason, details, created_at").eq("order_id", order.id).maybeSingle()
     : { data: null };
+  const { data: myReview } =
+    order.status === "completed"
+      ? await supabase.from("reviews").select("stars, visible_at").eq("order_id", order.id).eq("reviewer_id", viewer.userId).maybeSingle()
+      : { data: null };
   const pickup = order.delivery_method === "self_pickup" || order.delivery_method === "pickup_point";
   const bulky = ["van", "intercity_van", "self_pickup"].includes(order.delivery_method);
 
@@ -130,9 +134,20 @@ export default async function OrderPage({ params, searchParams }: { params: Prom
         )}
         {s === "completed" && (
           <div className="note">
-            <b>Completed.</b> {role === "seller" ? `${naira(order.item_kobo)} is yours. Payouts to your bank are coming soon.` : "Thanks for buying on Jaale. Reviews are coming soon."}
+            <b>Completed.</b> {role === "seller" ? `${naira(order.item_kobo)} is yours. Payouts to your bank are coming soon.` : "Thanks for buying on Jaale."}
           </div>
         )}
+        {s === "completed" &&
+          (myReview ? (
+            <p className="sample">
+              You rated {other?.full_name} {myReview.stars} star{myReview.stars === 1 ? "" : "s"}.{" "}
+              {new Date(myReview.visible_at) > new Date() ? "It appears once they've rated you too, or after 7 days." : "Your review is live."}
+            </p>
+          ) : (
+            <Link href={`/orders/${order.id}/review`} className="btn block">
+              Rate {other?.full_name ?? (role === "buyer" ? "the seller" : "the buyer")}
+            </Link>
+          ))}
         {s === "cancelled" && <div className="note warm"><b>Cancelled.</b> No money was taken for this order.</div>}
 
         {!["refunded", "cancelled"].includes(s) && (

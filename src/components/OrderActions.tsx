@@ -29,10 +29,11 @@ export function OrderActions({
     start(async () => {
       const res = await orderAction(orderId, action, extra);
       toast(res.error ?? done);
-      if (!res.error) {
-        setReporting(false);
-        router.refresh();
-      }
+      if (res.error) return;
+      setReporting(false);
+      // "All good" goes straight to the rating screen, as in the design.
+      if (action === "confirm") router.push(`/orders/${orderId}/review`);
+      else router.refresh();
     });
   }
 

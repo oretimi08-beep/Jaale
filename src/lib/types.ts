@@ -14,6 +14,7 @@ export type Profile = ProfileLite & {
   bio: string | null;
   goal: "buy_and_sell" | "mostly_buy";
   verified_bank: boolean;
+  banned_at: string | null;
   created_at: string;
 };
 
@@ -49,4 +50,8 @@ export type Viewer = {
   userId: string;
   email: string | null;
   profile: Profile | null;
+  isAdmin: boolean;
+  banned: boolean;
 };
+
+export type Ratings = { seller_avg: number | null; seller_count: number; buyer_avg: number | null; buyer_count: number };

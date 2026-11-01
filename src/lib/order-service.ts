@@ -56,7 +56,7 @@ async function issueRefund(order: OrderRow, reason: string) {
 /** Asks Paystack whether this order was paid, and records it if so. Safe to call many times. */
 export async function confirmPayment(
   orderId: string,
-  opts: { retries?: number } = {},
+  opts: { retries?: number; justReturned?: boolean } = {},
 ): Promise<{ status: OrderStatus; message?: string; stillChecking?: boolean }> {
   const order = await load(orderId);
   if (!order) return { status: "cancelled", message: "Order not found." };
@@ -70,13 +70,17 @@ export async function confirmPayment(
     } catch {
       return { status: order.status, message: "We couldn't reach Paystack to check your payment. Refresh in a moment." };
     }
-    const unsettled = payment.status === "ongoing" || payment.status === "pending" || payment.status === "processing";
+    // Paystack calls a transaction "abandoned" until it settles. If the buyer was just sent back
+    // from the payment page, that only means "not updated yet", so keep checking.
+    const unsettled =
+      ["ongoing", "pending", "processing", "queued"].includes(payment.status) ||
+      (payment.status === "abandoned" && !!opts.justReturned);
     if (!unsettled || attempt >= (opts.retries ?? 0)) break;
     await new Promise((r) => setTimeout(r, 1500));
   }
-  if (payment.status === "abandoned" || payment.status === "ongoing" || payment.status === "pending" || payment.status === "processing") {
+  if (payment.status !== "success" && payment.status !== "failed" && payment.status !== "reversed") {
     const fresh = await load(order.id); // the webhook may have got there first
-    return { status: fresh?.status ?? order.status, stillChecking: payment.status !== "abandoned" };
+    return { status: fresh?.status ?? order.status, stillChecking: payment.status !== "abandoned" || !!opts.justReturned };
   }
   const check = paymentMatches(order, payment);
   if (!check.ok) {
@@ -186,4 +190,40 @@ export async function markRefund(reference: string, status: "processed" | "faile
 export async function findOrderIdByReference(reference: string): Promise<string | null> {
   const { data } = await db().from("orders").select("id").eq("paystack_reference", reference).maybeSingle();
   return (data?.id as string) ?? null;
+}
+
+/** The price a seller agreed with this buyer in chat, if any. */
+export async function acceptedOfferKobo(listingId: string, buyerId: string): Promise<number | null> {
+  const { data: convo } = await db().from("conversations").select("id").eq("listing_id", listingId).eq("buyer_id", buyerId).maybeSingle();
+  if (!convo) return null;
+  const { data } = await db()
+    .from("messages")
+    .select("offer_kobo")
+    .eq("conversation_id", convo.id)
+    .eq("offer_status", "accepted")
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  return (data?.offer_kobo as number) ?? null;
+}
+
+/** Our team's decision on a reported problem: refund the buyer, or release the money to the seller. */
+export async function resolveDispute(orderId: string, outcome: "refund" | "release", note: string): Promise<{ ok: boolean; reason?: string }> {
+  const order = await load(orderId);
+  if (!order || order.status !== "disputed") return { ok: false, reason: "This order isn't waiting on a decision." };
+  const now = new Date().toISOString();
+  const { data: updated } = await db()
+    .from("orders")
+    .update(outcome === "refund" ? { status: "refunded", cancelled_at: now } : { status: "completed", completed_at: now })
+    .eq("id", order.id)
+    .eq("status", "disputed")
+    .select("id");
+  if (!updated?.length) return { ok: false, reason: "Someone else just updated this order." };
+  await db()
+    .from("disputes")
+    .update({ status: outcome === "refund" ? "resolved_refund" : "resolved_release", resolution: note.slice(0, 500) || null })
+    .eq("order_id", order.id);
+  if (outcome === "refund") await issueRefund(order, "Our team refunded you after reviewing the problem.");
+  else await createPayout(order);
+  return { ok: true };
 }

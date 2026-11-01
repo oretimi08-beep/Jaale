@@ -11,6 +11,8 @@ const FLAGS: Record<string, string> = {
   signedout: "Signed out. See you soon.",
   welcome: "Welcome! Your profile is ready.",
   changed: "Password changed.",
+  reviewed: "Thanks! Your review is saved.",
+  suspended: "Your account is suspended.",
 };
 
 /** Show a short message from anywhere: toast("Saved"). */

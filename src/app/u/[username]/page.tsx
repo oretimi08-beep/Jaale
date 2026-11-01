@@ -6,10 +6,13 @@ import { ItemCard } from "@/components/ItemCard";
 import { FollowButton } from "@/components/FollowButton";
 import { ComingSoonButton } from "@/components/ComingSoonButton";
 import { signOut } from "@/app/actions/auth";
+import { starText } from "@/lib/reviews";
+import { createClient } from "@/lib/supabase/server";
 import {
   getFollowList,
   getFollowingIds,
   getProfileByUsername,
+  getRatings,
   getSavedIds,
   getSellerListings,
   getViewer,
@@ -38,7 +41,7 @@ export default async function ProfilePage({ params, searchParams }: Props) {
 
   const viewer = await getViewer();
   const me = viewer?.userId === p.id;
-  const [following, saved] = await Promise.all([getFollowingIds(), getSavedIds()]);
+  const [following, saved, ratings] = await Promise.all([getFollowingIds(), getSavedIds(), getRatings(p.id)]);
   const isFollowing = following.has(p.id);
   const joined = new Date(p.created_at).toLocaleDateString("en-NG", { month: "short", year: "numeric" });
   const base = `/u/${p.username}`;
@@ -64,7 +67,39 @@ export default async function ProfilePage({ params, searchParams }: Props) {
       </p>
     );
   } else if (tab === "reviews") {
-    body = (
+    const supabase = await createClient();
+    const { data } = await supabase
+      .from("reviews")
+      .select("id, role, stars, tags, comment, created_at, reviewer:profiles!reviews_reviewer_id_fkey(full_name, username)")
+      .eq("reviewee_id", p.id)
+      .lte("visible_at", new Date().toISOString())
+      .order("created_at", { ascending: false })
+      .limit(50);
+    const reviews = (data ?? []) as unknown as {
+      id: string;
+      role: string;
+      stars: number;
+      tags: string[];
+      comment: string | null;
+      created_at: string;
+      reviewer: { full_name: string; username: string } | null;
+    }[];
+    body = reviews.length ? (
+      reviews.map((r) => (
+        <div key={r.id} style={{ borderBottom: "1px solid var(--line)", paddingBottom: 12, display: "grid", gap: 4, justifyItems: "start" }}>
+          <div className="line" style={{ width: "100%" }}>
+            {r.reviewer ? <Link href={`/u/${r.reviewer.username}`}><b>{r.reviewer.full_name}</b></Link> : <b>Former member</b>}
+            <span style={{ color: "var(--accent)", letterSpacing: 1 }}>{starText(r.stars)}</span>
+          </div>
+          <span className={`bd ${r.role === "seller_rates_buyer" ? "auc" : ""}`}>
+            {r.role === "buyer_rates_seller" ? "Rated as a seller, by a buyer" : "Rated as a buyer, by a seller"}
+          </span>
+          {r.comment && <p style={{ margin: 0, fontSize: 14 }}>{r.comment}</p>}
+          {r.tags.length > 0 && <small className="muted">{r.tags.join(" · ")}</small>}
+          <small className="muted">{new Date(r.created_at).toLocaleDateString("en-NG", { day: "numeric", month: "short", year: "numeric" })}</small>
+        </div>
+      ))
+    ) : (
       <p className="empty">
         {me ? "Reviews appear here after your first sale or purchase. " : "No reviews yet. "}
         Buyers rate sellers, and sellers rate buyers. Both reviews appear at the same time.
@@ -119,6 +154,7 @@ export default async function ProfilePage({ params, searchParams }: Props) {
               @{p.username} · {p.city} · Joined {joined}
             </small>
             {p.is_demo && <small style={{ display: "block" }}>Demo store with sample items</small>}
+            {p.banned_at && <small style={{ display: "block", color: "var(--danger)" }}>This account is suspended</small>}
           </div>
         </div>
         {p.bio && <p style={{ margin: 0 }}>{p.bio}</p>}
@@ -138,13 +174,31 @@ export default async function ProfilePage({ params, searchParams }: Props) {
         <div className="two">
           <div className="rate">
             <small>As a seller</small>
-            <b>New</b>
-            <small>No reviews from buyers yet</small>
+            {ratings.seller_count ? (
+              <>
+                <b style={{ color: "var(--accent)" }}>★ {ratings.seller_avg?.toFixed(1)}</b>
+                <small>{ratings.seller_count} review{ratings.seller_count === 1 ? "" : "s"} from buyers</small>
+              </>
+            ) : (
+              <>
+                <b>New</b>
+                <small>No reviews from buyers yet</small>
+              </>
+            )}
           </div>
           <div className="rate">
             <small>As a buyer</small>
-            <b>New</b>
-            <small>No reviews from sellers yet</small>
+            {ratings.buyer_count ? (
+              <>
+                <b style={{ color: "var(--accent)" }}>★ {ratings.buyer_avg?.toFixed(1)}</b>
+                <small>{ratings.buyer_count} review{ratings.buyer_count === 1 ? "" : "s"} from sellers</small>
+              </>
+            ) : (
+              <>
+                <b>New</b>
+                <small>No reviews from sellers yet</small>
+              </>
+            )}
           </div>
         </div>
 
@@ -161,7 +215,7 @@ export default async function ProfilePage({ params, searchParams }: Props) {
         ) : (
           <div className="two">
             <FollowButton profileId={p.id} name={p.full_name} initial={isFollowing} signedIn={!!viewer?.profile} />
-            <ComingSoonButton className="btn ghost" needsSignIn={!viewer?.profile} message="Messaging is coming soon. Chats will stay inside the app.">
+            <ComingSoonButton className="btn ghost" needsSignIn={!viewer?.profile} message="To message this seller, open one of their items and tap Ask a question.">
               Message
             </ComingSoonButton>
           </div>

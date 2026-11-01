@@ -3,7 +3,7 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import { getViewer } from "@/lib/data";
+import { BANNED_MESSAGE, getViewer } from "@/lib/data";
 import { CITIES } from "@/lib/config";
 import { safeNext, type FormState } from "@/lib/safe-next";
 
@@ -112,6 +112,7 @@ export async function updateProfile(_: FormState, form: FormData): Promise<FormS
 export async function toggleFollow(profileId: string, path: string): Promise<{ following?: boolean; error?: string }> {
   const viewer = await getViewer();
   if (!viewer?.profile) return { error: "signin" };
+  if (viewer.banned) return { error: BANNED_MESSAGE };
   if (profileId === viewer.userId) return { error: "You can't follow yourself." };
   const supabase = await createClient();
   const { data: existing } = await supabase
@@ -133,6 +134,7 @@ export async function toggleFollow(profileId: string, path: string): Promise<{ f
 export async function toggleSave(listingId: string): Promise<{ saved?: boolean; error?: string }> {
   const viewer = await getViewer();
   if (!viewer?.profile) return { error: "signin" };
+  if (viewer.banned) return { error: BANNED_MESSAGE };
   const supabase = await createClient();
   const { data: existing } = await supabase
     .from("saves")

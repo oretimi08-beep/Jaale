@@ -3,11 +3,11 @@
 import { randomBytes } from "node:crypto";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
-import { getListing, getViewer } from "@/lib/data";
+import { BANNED_MESSAGE, getListing, getViewer } from "@/lib/data";
 import { isBulky } from "@/lib/catalog";
 import { deliveryOptions } from "@/lib/delivery";
 import { quote } from "@/lib/orders";
-import { applyAction } from "@/lib/order-service";
+import { acceptedOfferKobo, applyAction } from "@/lib/order-service";
 import { initializePayment, paystackReady, type Channel } from "@/lib/paystack";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { siteUrl, type FormState } from "@/lib/safe-next";
@@ -28,6 +28,7 @@ export async function startCheckout(listingId: string, _: FormState, form: FormD
   const fields: Record<string, string> = {};
   form.forEach((v, k) => typeof v === "string" && !k.startsWith("$") && (fields[k] = v));
 
+  if (viewer.banned) return { error: BANNED_MESSAGE, fields };
   if (!paystackReady()) return { error: "Payments aren't switched on yet. Please try again later.", fields };
 
   const listing = await getListing(listingId);
@@ -45,7 +46,10 @@ export async function startCheckout(listingId: string, _: FormState, form: FormD
   if (!phone) return { error: "Add a Nigerian phone number so the rider can reach you, e.g. 803 123 4567.", fields };
   const channel = CHANNELS[fields.method] ?? "card";
 
-  const q = quote(listing.price_kobo, option.kobo);
+  // A price agreed in chat replaces the asking price, but never raises it.
+  const offer = await acceptedOfferKobo(listing.id, viewer.userId);
+  const itemKobo = offer && offer < listing.price_kobo ? offer : listing.price_kobo;
+  const q = quote(itemKobo, option.kobo);
   const reference = `JAALE-${Date.now().toString(36)}-${randomBytes(4).toString("hex")}`.toUpperCase();
   const admin = createAdminClient();
 

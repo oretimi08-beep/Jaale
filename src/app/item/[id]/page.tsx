@@ -5,9 +5,9 @@ import { Avatar } from "@/components/Avatar";
 import { Gallery } from "@/components/Gallery";
 import { OwnerControls } from "@/components/OwnerControls";
 import { SaveButton } from "@/components/SaveButton";
-import { ComingSoonButton } from "@/components/ComingSoonButton";
+import { openConversation } from "@/app/actions/messages";
 import { CONDITIONS, getCategory, isBulky, deptLabel } from "@/lib/catalog";
-import { getListing, getSavedIds, getViewer } from "@/lib/data";
+import { getListing, getRatings, getSavedIds, getViewer } from "@/lib/data";
 import { createClient } from "@/lib/supabase/server";
 import { naira, totalWithProtection } from "@/lib/money";
 
@@ -29,6 +29,8 @@ export default async function ItemPage({ params }: Props) {
   const supabase = await createClient();
   const { data: stats } = await supabase.from("profile_stats").select("follower_count").eq("id", item.seller_id).maybeSingle();
   const followers = (stats?.follower_count as number) ?? 0;
+  const ratings = await getRatings(item.seller_id);
+  const rate = (avg: number | null, n: number, who: string) => (n ? `★ ${avg?.toFixed(1)} as ${who}` : `New ${who}`);
   const sold = item.status === "sold";
 
   return (
@@ -84,7 +86,8 @@ export default async function ItemPage({ params }: Props) {
                   {item.seller.verified_bank && <span className="tick">✓</span>}
                 </b>
                 <small>
-                  @{item.seller.username} · New seller · {followers.toLocaleString()} follower{followers === 1 ? "" : "s"}
+                  {rate(ratings.seller_avg, ratings.seller_count, "seller")} · {rate(ratings.buyer_avg, ratings.buyer_count, "buyer")} ·{" "}
+                  {followers.toLocaleString()} follower{followers === 1 ? "" : "s"}
                 </small>
               </div>
               <span className="muted">›</span>
@@ -98,13 +101,9 @@ export default async function ItemPage({ params }: Props) {
             {!mine && (
               <>
                 <div className="two">
-                  <ComingSoonButton
-                    className="btn ghost"
-                    needsSignIn={!viewer?.profile}
-                    message="Offers and chat are coming soon. They'll stay inside the app."
-                  >
-                    Make an offer
-                  </ComingSoonButton>
+                  <form action={openConversation.bind(null, item.id, "offer")} style={{ display: "grid" }}>
+                    <button className="btn ghost" disabled={item.status !== "active"}>Make an offer</button>
+                  </form>
                   {item.status !== "active" ? (
                     <button className="btn" disabled>{sold ? "Sold" : "Reserved"}</button>
                   ) : (
@@ -116,7 +115,12 @@ export default async function ItemPage({ params }: Props) {
                     </Link>
                   )}
                 </div>
-                <SaveButton listingId={item.id} title={item.title} initialSaved={saved.has(item.id)} initialCount={item.save_count} big />
+                <div className="two">
+                  <form action={openConversation.bind(null, item.id, "ask")} style={{ display: "grid" }}>
+                    <button className="btn ghost">Ask a question</button>
+                  </form>
+                  <SaveButton listingId={item.id} title={item.title} initialSaved={saved.has(item.id)} initialCount={item.save_count} big />
+                </div>
               </>
             )}
             <p className="sample">Listed {new Date(item.created_at).toLocaleDateString("en-NG", { day: "numeric", month: "short", year: "numeric" })}</p>

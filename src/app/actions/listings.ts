@@ -3,7 +3,7 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import { getViewer } from "@/lib/data";
+import { BANNED_MESSAGE, getViewer } from "@/lib/data";
 import { getCategory, isBulky } from "@/lib/catalog";
 import { CITIES, MAX_PHOTOS } from "@/lib/config";
 import { nairaInputToKobo } from "@/lib/money";
@@ -69,6 +69,7 @@ function formFields(form: FormData): Record<string, string> {
 export async function createListing(_: FormState, form: FormData): Promise<FormState> {
   const viewer = await getViewer();
   if (!viewer?.profile) redirect("/login?next=/sell");
+  if (viewer.banned) return { error: BANNED_MESSAGE, fields: formFields(form) };
   const l = readListingForm(form);
   const photos = readPhotos(form.get("photos"), viewer.userId);
   const problem = validate(l) ?? (photos.length ? null : "Add at least one photo so buyers can see the item.");
@@ -90,6 +91,7 @@ export async function createListing(_: FormState, form: FormData): Promise<FormS
 export async function updateListing(id: string, _: FormState, form: FormData): Promise<FormState> {
   const viewer = await getViewer();
   if (!viewer?.profile) redirect(`/login?next=/item/${id}/edit`);
+  if (viewer.banned) return { error: BANNED_MESSAGE, fields: formFields(form) };
   const supabase = await createClient();
   const { data: existing } = await supabase
     .from("listings")
@@ -120,6 +122,7 @@ export async function updateListing(id: string, _: FormState, form: FormData): P
 export async function setListingStatus(id: string, status: Exclude<ListingStatus, "removed">) {
   const viewer = await getViewer();
   if (!viewer?.profile) return { error: "signin" };
+  if (viewer.banned) return { error: BANNED_MESSAGE };
   if (!["active", "reserved", "sold"].includes(status)) return { error: "Unknown status" };
   const supabase = await createClient();
   const { error } = await supabase.from("listings").update({ status }).eq("id", id).eq("seller_id", viewer.userId);
