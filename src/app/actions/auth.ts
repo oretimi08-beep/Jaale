@@ -14,7 +14,9 @@ function friendly(message: string): string {
   if (m.includes("already registered") || m.includes("already been registered"))
     return "There's already an account with this email. Sign in instead.";
   if (m.includes("email not confirmed")) return "Please confirm your email first. Check your inbox for the link.";
-  if (m.includes("rate limit") || m.includes("too many")) return "Too many tries. Wait a minute and try again.";
+  if (m.includes("email rate limit"))
+    return "We're getting lots of sign-ups right now and can't send another email yet. Please try again in about an hour.";
+  if (m.includes("rate limit") || m.includes("too many")) return "Too many tries. Wait a few minutes and try again.";
   if (m.includes("password should")) return "Choose a stronger password: at least 8 characters.";
   if (m.includes("same") && m.includes("password")) return "Your new password must be different from the old one.";
   return message;
