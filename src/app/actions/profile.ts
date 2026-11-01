@@ -67,7 +67,7 @@ export async function createProfile(_: FormState, form: FormData): Promise<FormS
   if (await usernameTaken(supabase, p.username, viewer.userId)) {
     return { error: `@${p.username} is taken. Try another username.`, fields };
   }
-  const { error } = await supabase.from("profiles").upsert({
+  const { error } = await supabase.from("profiles").insert({
     id: viewer.userId,
     full_name: p.full_name,
     username: p.username,
