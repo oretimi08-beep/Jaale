@@ -1,0 +1,635 @@
+<title>Declotr Redesign</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Figtree:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: sticky header + department tabs, short trust hero, scrolling category and store rows, trending rail, home spotlight band, explore grid; item, checkout, tracking and sell open in a side sheet (bottom sheet on phones). */
+:root{
+  --indigo:#4A5A2B; --indigo-soft:#E6E9D6; --marigold:#D8B34A; --leaf:#4E7A2E; --rose:#B4543A;
+  --bg:#F3F2EA; --surface:#FDFDF8; --line:#DEDDCF; --fg:#22261A; --muted:#6B6F5C;
+  --on-indigo:#FDFDF8; --scrim:rgba(34,38,26,.45);
+  --display:"Bricolage Grotesque","Trebuchet MS",system-ui,sans-serif;
+  --body:"Figtree","Segoe UI",system-ui,sans-serif; --r:14px;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --indigo:#B9C88E;--indigo-soft:#2A3120;--marigold:#E3C461;--leaf:#A6C77A;--rose:#E68A70;
+  --bg:#13160F;--surface:#1C2017;--line:#30352A;--fg:#ECEEE3;--muted:#A9AE98;--on-indigo:#13160F;--scrim:rgba(0,0,0,.6);color-scheme:dark}}
+:root[data-theme="dark"]{
+  --indigo:#B9C88E;--indigo-soft:#2A3120;--marigold:#E3C461;--leaf:#A6C77A;--rose:#E68A70;
+  --bg:#13160F;--surface:#1C2017;--line:#30352A;--fg:#ECEEE3;--muted:#A9AE98;--on-indigo:#13160F;--scrim:rgba(0,0,0,.6);color-scheme:dark}
+
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:15px;line-height:1.5}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--surface)}
+.wrap{max-width:1200px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:3px solid var(--marigold);outline-offset:2px;border-radius:8px}
+h1,h2,h3{font-family:var(--display);text-wrap:balance;margin:0;line-height:1.1}
+.num{font-variant-numeric:tabular-nums}
+
+/* header */
+header{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--surface);border-bottom:1px solid var(--line)}
+.bar{display:flex;align-items:center;gap:12px;padding-block:12px}
+.logo{font-family:var(--display);font-weight:800;font-size:22px;letter-spacing:-.02em;color:var(--indigo);display:flex;align-items:center;gap:8px;background:none;border:0;padding:0;white-space:nowrap}
+.logo i{width:26px;height:26px;border-radius:8px;background:var(--indigo);display:grid;place-items:center;flex:none}
+.logo i::after{content:"";width:10px;height:10px;border-radius:50%;background:var(--marigold)}
+.logo small{font-family:var(--body);font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);border:1px dashed var(--line);border-radius:6px;padding:1px 5px}
+.search{flex:1;min-width:0;display:flex;align-items:center;gap:8px;background:var(--bg);border:1px solid var(--line);border-radius:999px;padding:9px 14px}
+.search input{border:0;background:none;outline:none;width:100%;min-width:0}
+.icon{width:40px;height:40px;border-radius:50%;border:0;background:none;display:grid;place-items:center;color:var(--fg);position:relative;flex:none}
+.icon:hover{background:var(--bg)}
+.icon .n{position:absolute;top:4px;right:4px;background:var(--rose);color:#fff;font-size:10px;font-weight:700;border-radius:999px;min-width:16px;height:16px;display:grid;place-items:center;padding:0 4px}
+.btn{border:0;border-radius:999px;padding:10px 18px;font-weight:600;background:var(--indigo);color:var(--on-indigo);white-space:nowrap}
+.btn.ghost{background:transparent;color:var(--fg);border:1px solid var(--line)}
+.btn.block{width:100%;padding:14px;font-size:16px}
+.depts{display:flex;gap:4px;overflow-x:auto;scrollbar-width:none;padding-bottom:0}
+.dept{flex:none;border:0;background:none;padding:10px 12px;font-weight:600;color:var(--muted);border-bottom:3px solid transparent}
+.dept[aria-selected="true"]{color:var(--fg);border-bottom-color:var(--marigold)}
+.dept .new{font-size:10px;font-weight:700;background:var(--marigold);color:#1B1A10;border-radius:999px;padding:1px 6px;margin-left:4px;vertical-align:2px}
+@media (max-width:640px){.hide-sm{display:none}.bar{flex-wrap:wrap}.search{order:3;flex-basis:100%}.bar .sellb{margin-left:auto}}
+
+/* hero */
+.hero{background:var(--indigo);color:var(--on-indigo);position:relative;overflow:hidden}
+.hero::before{content:"";position:absolute;inset:0;opacity:.12;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='56' height='56' viewBox='0 0 56 56'%3E%3Cg fill='none' stroke='%23fff' stroke-width='2'%3E%3Ccircle cx='14' cy='14' r='8'/%3E%3Ccircle cx='14' cy='14' r='3'/%3E%3Cpath d='M30 6l20 16M30 22l20-16'/%3E%3Cpath d='M6 34h16M6 42h16M6 50h16'/%3E%3Ccircle cx='42' cy='42' r='9' stroke-dasharray='3 3'/%3E%3C/g%3E%3C/svg%3E")}
+.hero .wrap{position:relative;display:grid;grid-template-columns:1.25fr 1fr;gap:28px;padding-block:32px;align-items:center}
+.hero h1{font-size:clamp(28px,4.4vw,46px);font-weight:800;letter-spacing:-.03em}
+.hero h1 em{font-style:normal;color:var(--marigold)}
+.hero p{max-width:48ch;opacity:.9;font-size:16px;margin:12px 0 18px}
+.hero .cta{display:flex;gap:10px;flex-wrap:wrap}
+.hero .btn{background:var(--marigold);color:#1B1A10}
+.hero .btn.ghost{background:transparent;color:var(--on-indigo);border-color:color-mix(in srgb,var(--on-indigo) 40%,transparent)}
+.promise{background:color-mix(in srgb,var(--on-indigo) 9%,transparent);border:1px solid color-mix(in srgb,var(--on-indigo) 22%,transparent);border-radius:var(--r);padding:16px;display:grid;gap:10px}
+.promise h3{font-size:13px;letter-spacing:.08em;text-transform:uppercase;font-family:var(--body);font-weight:700;opacity:.85}
+.step{display:flex;gap:12px;align-items:flex-start;font-size:14px}
+.step b{flex:none;width:26px;height:26px;border-radius:50%;background:var(--marigold);color:#1B1A10;display:grid;place-items:center;font-size:13px}
+@media (max-width:820px){.hero .wrap{grid-template-columns:1fr;padding-block:24px}}
+
+/* sections */
+section.blk{padding-block:22px 4px}
+.sh{display:flex;justify-content:space-between;align-items:baseline;gap:12px;margin-bottom:12px}
+.sh h2{font-size:22px}
+.sh p{margin:2px 0 0;color:var(--muted);font-size:13px}
+.link{border:0;background:none;color:var(--indigo);font-weight:600;padding:0;white-space:nowrap}
+.rail{display:flex;gap:14px;overflow-x:auto;padding-bottom:8px;scroll-snap-type:x proximity}
+.cat{flex:none;width:84px;border:0;background:none;padding:0;display:grid;justify-items:center;gap:6px;font-size:12.5px;font-weight:500;text-align:center;scroll-snap-align:start}
+.cat span.ci{color:var(--indigo);width:64px;height:64px;border-radius:18px;display:grid;place-items:center;background:var(--surface);border:1px solid var(--line)}
+.cat span.ci svg{width:34px;height:34px}
+.cat[aria-pressed="true"] span.ci{border-color:var(--indigo);box-shadow:0 0 0 2px var(--indigo)}
+.store{flex:none;width:92px;border:0;background:none;padding:0;display:grid;justify-items:center;gap:6px;font-size:12px;text-align:center;scroll-snap-align:start}
+.store .av{width:64px;height:64px;font-size:20px;box-shadow:0 0 0 3px var(--surface),0 0 0 5px var(--marigold)}
+.store small{color:var(--muted);display:block;font-size:11px}
+.tick{display:inline-grid;place-items:center;width:14px;height:14px;border-radius:50%;background:var(--indigo);color:var(--on-indigo);font-size:9px;font-weight:800;vertical-align:-2px;margin-left:3px}
+.trend .card{flex:none;width:180px;scroll-snap-align:start}
+
+/* cards */
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:18px}
+@media (max-width:480px){.grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.trend .card{width:150px}}
+.card{display:grid;gap:8px;min-width:0;align-content:start}
+.pic{cursor:pointer;aspect-ratio:4/5;max-width:100%;border-radius:var(--r);display:grid;place-items:center;position:relative;overflow:hidden}
+.pic svg.art{width:58%;height:auto;filter:drop-shadow(0 6px 10px rgba(0,0,0,.12))}
+.badges{position:absolute;left:8px;top:8px;display:flex;gap:4px;flex-wrap:wrap;max-width:calc(100% - 50px)}
+.bd{font-size:10.5px;font-weight:700;border-radius:999px;padding:3px 8px;background:var(--surface);color:var(--fg);letter-spacing:.02em}
+.bd.off{background:var(--rose);color:#fff}
+.bd.newt{background:var(--leaf);color:#fff}
+.bd.auc{background:var(--marigold);color:#1B1A10}
+.fav{position:absolute;right:8px;bottom:8px;height:30px;min-width:30px;border-radius:999px;border:0;background:var(--surface);display:flex;align-items:center;justify-content:center;gap:4px;padding:0 8px;color:var(--muted);font-size:12px;font-weight:600}
+.fav[aria-pressed="true"]{color:var(--rose)}
+.meta{display:grid;gap:2px;min-width:0;background:none;border:0;padding:0;text-align:left}
+.meta .t{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.meta .p{font-weight:700;font-size:16px;display:flex;gap:6px;align-items:baseline;flex-wrap:wrap}
+.meta s{color:var(--muted);font-weight:500;font-size:12.5px}
+.meta small{color:var(--muted);font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.safe{display:inline-flex;align-items:center;gap:5px;color:var(--leaf);font-size:12px;font-weight:600}
+.empty{grid-column:1/-1;text-align:center;color:var(--muted);padding:40px 0}
+.more{display:flex;justify-content:center;padding-block:22px 40px}
+
+/* home spotlight */
+.spot{margin-top:22px;background:var(--indigo-soft);border-radius:20px;padding:22px;display:grid;grid-template-columns:1fr 1.4fr;gap:22px;align-items:center}
+.spot h2{font-size:26px}
+.spot p{color:var(--muted);margin:8px 0 14px;max-width:44ch}
+.spot ul{margin:0 0 16px;padding:0;list-style:none;display:grid;gap:6px;font-size:14px}
+.spot li::before{content:"✓ ";color:var(--leaf);font-weight:700}
+.spot .tiles{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.spot .tile{border:0;border-radius:var(--r);aspect-ratio:1/1;display:grid;place-items:center;padding:8px;position:relative}
+.spot .tile svg{width:55%}
+.spot .tile span{position:absolute;left:8px;bottom:8px;font-size:12px;font-weight:700;background:var(--surface);color:var(--fg);border-radius:999px;padding:2px 8px}
+@media (max-width:820px){.spot{grid-template-columns:1fr}}
+
+/* trust strip, footer */
+.strip{background:var(--surface);border-block:1px solid var(--line)}
+.strip .wrap{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:20px;padding-block:26px}
+.strip h3{font-size:16px;margin-bottom:4px}
+.strip p{margin:0;color:var(--muted);font-size:14px}
+@media (max-width:820px){.strip .wrap{grid-template-columns:repeat(2,minmax(0,1fr))}}
+footer .wrap{display:grid;grid-template-columns:1.4fr repeat(3,1fr);gap:24px;padding-block:30px 20px}
+footer h4{margin:0 0 8px;font-size:14px}
+footer ul{list-style:none;margin:0;padding:0;display:grid;gap:6px;color:var(--muted);font-size:14px}
+footer p{color:var(--muted);font-size:14px;margin:8px 0}
+.fine{color:var(--muted);font-size:12px;text-align:center;padding-block:0 30px}
+@media (max-width:700px){footer .wrap{grid-template-columns:1fr 1fr}}
+
+/* sheet */
+.scrim{position:fixed;inset:0;background:var(--scrim);z-index:40}
+.sheet{position:fixed;z-index:41;top:0;right:0;bottom:0;width:min(480px,100%);background:var(--surface);overflow-y:auto;padding:calc(20px + env(safe-area-inset-top,0px)) max(20px,env(safe-area-inset-right,0px)) calc(28px + env(safe-area-inset-bottom,0px)) 20px;display:grid;align-content:start;grid-auto-rows:max-content;gap:16px;box-shadow:-10px 0 40px rgba(0,0,0,.18)}
+@media (max-width:640px){.sheet{top:auto;width:100%;max-height:92%;border-radius:20px 20px 0 0;padding-left:max(18px,env(safe-area-inset-left,0px));padding-right:max(18px,env(safe-area-inset-right,0px));padding-top:18px}}
+.shead{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.x{border:0;background:var(--bg);width:36px;height:36px;border-radius:50%;font-size:20px;line-height:1}
+.sheet .pic{aspect-ratio:1/1;cursor:default}
+.sheet h2{font-size:24px}
+.big{font-family:var(--display);font-size:30px;font-weight:800;display:flex;gap:10px;align-items:baseline}
+.big s{font-family:var(--body);font-size:15px;font-weight:500;color:var(--muted)}
+.tags{display:flex;gap:6px;flex-wrap:wrap}
+.tag{background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:4px 10px;font-size:13px}
+.seller{display:flex;gap:12px;align-items:center;border:1px solid var(--line);border-radius:var(--r);padding:12px}
+.av{width:42px;height:42px;border-radius:50%;display:grid;place-items:center;font-weight:700;color:#fff;flex:none}
+.seller small{color:var(--muted);display:block}
+.note{background:color-mix(in srgb,var(--leaf) 10%,var(--surface));border:1px solid color-mix(in srgb,var(--leaf) 35%,transparent);border-radius:var(--r);padding:12px 14px;font-size:14px}
+.note b{color:var(--leaf)}
+.note.warm{background:color-mix(in srgb,var(--marigold) 14%,var(--surface));border-color:color-mix(in srgb,var(--marigold) 50%,transparent)}
+.note.warm b{color:var(--fg)}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.lines{display:grid;gap:8px;border:1px solid var(--line);border-radius:var(--r);padding:14px}
+.line{display:flex;justify-content:space-between;gap:12px}
+.line.total{border-top:1px dashed var(--line);padding-top:10px;font-weight:700;font-size:17px}
+.line small{color:var(--muted)}
+fieldset{border:0;padding:0;margin:0;display:grid;gap:8px}
+legend{font-weight:700;margin-bottom:6px}
+.opt{display:flex;gap:10px;align-items:center;border:1px solid var(--line);border-radius:12px;padding:12px}
+.opt:has(input:checked){border-color:var(--indigo);background:var(--indigo-soft)}
+.opt span{flex:1}
+.opt small{color:var(--muted);display:block}
+label.f{display:grid;gap:6px;font-weight:600;font-size:14px}
+.f input,.f select{border:1px solid var(--line);background:var(--bg);border-radius:10px;padding:11px 12px;font-weight:400;min-width:0;width:100%}
+.drop{border:2px dashed var(--line);border-radius:var(--r);padding:20px;text-align:center;color:var(--muted)}
+.track{display:grid}
+.tk{display:grid;grid-template-columns:28px 1fr;gap:12px;padding-bottom:16px;position:relative}
+.tk::before{content:"";position:absolute;left:13px;top:28px;bottom:0;width:2px;background:var(--line)}
+.tk:last-child::before{display:none}
+.dot{width:28px;height:28px;border-radius:50%;border:2px solid var(--line);background:var(--surface);display:grid;place-items:center;font-size:13px}
+.tk.done .dot{background:var(--leaf);border-color:var(--leaf);color:#fff}
+.tk.now .dot{border-color:var(--marigold);background:var(--marigold);color:#1B1A10}
+.tk small{color:var(--muted);display:block}
+.sample{font-size:12px;color:var(--muted)}
+.toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--fg);color:var(--bg);padding:12px 18px;border-radius:999px;z-index:60;font-weight:600;max-width:calc(100% - 32px)}
+@media (prefers-reduced-motion:no-preference){.sheet{animation:in .22s ease-out}@keyframes in{from{transform:translateY(16px);opacity:.6}}}
+.sbtn{width:100%;text-align:left;font:inherit;color:inherit;cursor:pointer;background:none}
+.av.xl{width:72px;height:72px;font-size:28px}
+.phead{display:flex;gap:14px;align-items:center}
+.phead small{color:var(--muted)}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
+.stats button{border:0;background:none;padding:12px 4px;display:grid;font-size:12.5px;color:var(--muted)}
+.stats button+button{border-left:1px solid var(--line)}
+.stats b{font-size:19px;color:var(--fg);font-family:var(--display)}
+.rate{border:1px solid var(--line);border-radius:var(--r);padding:12px;display:grid;gap:2px}
+.rate b{font-size:20px;font-family:var(--display)}
+.rate small{color:var(--muted);font-size:12px}
+.ptabs{display:flex;border-bottom:1px solid var(--line);overflow-x:auto}
+.ptabs button{flex:1;border:0;background:none;padding:10px 6px;font-weight:600;color:var(--muted);border-bottom:3px solid transparent;white-space:nowrap}
+.ptabs button[aria-selected="true"]{color:var(--fg);border-bottom-color:var(--marigold)}
+.pbody{display:grid;gap:10px}
+.grid.mini{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.prow{display:flex;align-items:center;gap:10px}
+.prow-l{display:flex;gap:10px;align-items:center;border:0;padding:4px 0;flex:1;min-width:0}
+.prow-l small{display:block;color:var(--muted);font-size:12.5px}
+.btn.sm{padding:7px 14px;font-size:13px}
+.rev{border-bottom:1px solid var(--line);padding-bottom:12px;display:grid;gap:4px;justify-items:start}
+.rev p{margin:0;font-size:14px}.rev small{color:var(--muted);font-size:12px}
+.rev .line{width:100%}
+.stars-s{color:var(--marigold);letter-spacing:1px}
+.starpick{display:flex;gap:6px}
+.starpick button{border:0;background:none;font-size:34px;line-height:1;color:var(--line);padding:2px}
+.starpick button[aria-checked="true"]{color:var(--marigold)}
+.tag.tg{cursor:pointer}.tag.tg[aria-pressed="true"]{background:var(--indigo);color:var(--on-indigo);border-color:var(--indigo)}
+.f textarea{border:1px solid var(--line);background:var(--bg);border-radius:10px;padding:11px 12px;font-weight:400;resize:vertical}
+.steps{display:flex;gap:6px}.steps span{flex:1;height:4px;border-radius:4px;background:var(--line)}.steps span.on{background:var(--indigo)}
+.phone{display:flex;border:1px solid var(--line);border-radius:10px;background:var(--bg);overflow:hidden}
+.phone span{padding:11px 12px;border-right:1px solid var(--line);font-weight:500;white-space:nowrap}
+.phone input{border:0!important;flex:1;min-width:0}
+.otp{letter-spacing:.5em;font-size:20px!important;text-align:center}
+@media (max-width:640px){#authBtn{padding:9px 14px}.logo small{display:none}}
+</style>
+
+<header>
+  <div class="wrap bar">
+    <button class="logo" id="home" aria-label="Home"><i></i>Brandname <small>placeholder</small></button>
+    <label class="search"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input id="q" type="search" placeholder="Search dresses, sofas, fridges, sellers…" aria-label="Search items"></label>
+    <button class="icon hide-sm" id="savedBtn" aria-label="Saved items"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20s-7-4.4-9-8.8C1.7 7.9 3.7 4 7.3 4c2 0 3.4 1.1 4.7 2.8C13.3 5.1 14.7 4 16.7 4c3.6 0 5.6 3.9 4.3 7.2C19 15.6 12 20 12 20z"/></svg><span class="n" id="favN" hidden>0</span></button>
+    <button class="icon hide-sm" id="ordersBtn" aria-label="My orders"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7h18l-2 13H5z"/><path d="M8 7a4 4 0 0 1 8 0"/></svg><span class="n">1</span></button>
+    <button class="btn ghost" id="authBtn">Sign in</button><button class="icon" id="meBtn" hidden aria-label="My profile"><span class="av" id="meAv" style="width:34px;height:34px;background:var(--indigo);color:var(--on-indigo)"></span></button><button class="btn sellb" id="sellBtn">Sell now</button>
+  </div>
+  <nav class="wrap depts" id="depts" role="tablist" aria-label="Departments"></nav>
+</header>
+
+<section class="hero">
+  <div class="wrap">
+    <div>
+      <h1>Pre-loved fashion and home, <em>no wahala.</em></h1>
+      <p>Buy and sell clothes, furniture and appliances across Nigeria. Your money stays protected until the item is in your hands, and selling is free.</p>
+      <div class="cta"><button class="btn" id="heroSell">List an item, it's free</button><button class="btn ghost" id="heroShop">Start shopping</button></div>
+    </div>
+    <div class="promise" aria-label="How buyer protection works">
+      <h3>How your money stays safe</h3>
+      <div class="step"><b>1</b><span>You pay by card, transfer or USSD. We hold the money; the seller doesn't get it yet.</span></div>
+      <div class="step"><b>2</b><span>The seller ships with a rider or van we book. You track it in the app.</span></div>
+      <div class="step"><b>3</b><span>You have 2 days to check it. All good, the seller gets paid. A problem, you get a refund.</span></div>
+    </div>
+  </div>
+</section>
+
+<main class="wrap">
+  <section class="blk">
+    <div class="sh"><div><h2 id="catTitle">Shop by category</h2></div><button class="link" id="clearCat" hidden>Clear filter</button></div>
+    <div class="rail" id="cats"></div>
+  </section>
+
+  <section class="blk" id="storesBlk">
+    <div class="sh"><div><h2>Featured stores</h2><p>Verified sellers with great reviews</p></div><button class="link" data-toast="All stores page opens here.">View all ›</button></div>
+    <div class="rail" id="stores"></div>
+  </section>
+
+  <section class="blk" id="trendBlk">
+    <div class="sh"><div><h2>Trending</h2><p>Most saved this week</p></div></div>
+    <div class="rail trend" id="trend"></div>
+  </section>
+
+  <div class="spot" id="spot">
+    <div>
+      <h2>Now selling: home and appliances</h2>
+      <p>Moving house, upgrading, or relocating abroad? Sell the sofa, the fridge and the standing fan in the same place you sell your clothes.</p>
+      <ul><li>Van delivery booked for bulky items</li><li>Appliances marked "tested and working" by the seller</li><li>2 days to plug it in and check before the seller is paid</li></ul>
+      <button class="btn" data-dept="home">Shop home &amp; furniture</button>
+    </div>
+    <div class="tiles" id="tiles"></div>
+  </div>
+
+  <section class="blk">
+    <div class="sh"><div><h2 id="heading">Explore</h2><p id="sub">Curated for you</p></div>
+      <select id="sort" aria-label="Sort" class="tag"><option value="new">Newest</option><option value="low">Price: low to high</option><option value="high">Price: high to low</option><option value="deal">Biggest discount</option></select></div>
+    <div class="grid" id="grid"></div>
+    <div class="more"><button class="btn ghost" id="moreBtn">Load more</button></div>
+  </section>
+</main>
+
+<section class="strip">
+  <div class="wrap">
+    <div><h3>Free to sell</h3><p>No listing fees. Sellers keep 100% of the item price.</p></div>
+    <div><h3>Buyer protection</h3><p>A small fee on each order covers refunds if something goes wrong.</p></div>
+    <div><h3>Delivery booked for you</h3><p>Riders for parcels, vans for furniture and appliances.</p></div>
+    <div><h3>Chat stays in the app</h3><p>No sharing numbers or paying off-app, so scams have nowhere to hide.</p></div>
+  </div>
+</section>
+<footer>
+  <div class="wrap">
+    <div><button class="logo" tabindex="-1" aria-hidden="true"><i></i>Brandname</button><p>Buy and sell pre-loved fashion, furniture and appliances, direct from sellers across Nigeria.</p></div>
+    <div><h4>Shop</h4><ul><li>Women</li><li>Men</li><li>Home &amp; furniture</li><li>Appliances</li><li>Auctions</li></ul></div>
+    <div><h4>Account</h4><ul><li>My orders</li><li>Saved items</li><li>Messages</li><li>Seller wallet</li></ul></div>
+    <div><h4>Help</h4><ul><li>Buyer protection</li><li>Delivery and returns</li><li>Safety tips</li><li>Terms and privacy</li></ul></div>
+  </div>
+  <p class="fine wrap">Redesign concept. "Brandname" is a placeholder. Items, stores and prices are made-up examples. Buyer protection shown as ₦300 + 5% of the item price.</p>
+</footer>
+
+<div id="layer" hidden><div class="scrim" id="scrim"></div><div class="sheet" id="sheet" role="dialog" aria-modal="true"></div></div>
+<div class="toast" id="toast" hidden></div>
+
+<script>
+const S=(d,extra="")=>`<svg class="art" viewBox="0 0 100 100">${d}${extra}</svg>`;
+const ICON={
+ top:c=>S(`<path d="M32 14 14 26l8 18 10-5v47h36V39l10 5 8-18-18-12c-3 7-10 11-18 11s-15-4-18-11z" fill="${c}"/>`),
+ dress:c=>S(`<path d="M38 8h24l-2 18 6 8-4 10 18 46H20l18-46-4-10 6-8z" fill="${c}"/>`),
+ jeans:c=>S(`<path d="M28 8h44l6 84H56L50 40l-6 52H22z" fill="${c}"/>`),
+ shoe:c=>S(`<path d="M8 58c0-10 4-22 8-26 6 6 16 8 24 4l20 12c10 6 22 6 30 10 4 2 4 12 0 14H12c-3 0-4-6-4-14z" fill="${c}"/><path d="M8 72h86" stroke="rgba(0,0,0,.2)" stroke-width="5"/>`),
+ heel:c=>S(`<path d="M10 70c14-2 26-14 34-30 4-8 12-10 18-4l24 26c4 4 4 10-2 10H60c-6 0-10-4-14-8L30 78H22v10h-6V76c-4 0-6-3-6-6z" fill="${c}"/>`),
+ bag:c=>S(`<path d="M36 34c0-12 6-18 14-18s14 6 14 18" fill="none" stroke="${c}" stroke-width="6"/><rect x="18" y="32" width="64" height="54" rx="10" fill="${c}"/>`),
+ agbada:c=>S(`<path d="M40 10h20l4 8 30 14-6 40-18-6v34H30V66l-18 6-6-40 30-14z" fill="${c}"/><path d="M44 18l6 20 6-20" fill="none" stroke="rgba(255,255,255,.5)" stroke-width="3"/>`),
+ swim:c=>S(`<path d="M30 10h8l4 22h16l4-22h8l-4 30c-2 8 6 16 10 22-8 10-20 16-26 26-6-10-18-16-26-26 4-6 12-14 10-22z" fill="${c}"/>`),
+ kids:c=>S(`<path d="M36 22 22 30l6 14 8-4v34h28V40l8 4 6-14-14-8c-2 5-7 8-14 8s-12-3-14-8z" fill="${c}"/><circle cx="50" cy="56" r="6" fill="rgba(255,255,255,.55)"/>`),
+ sofa:c=>S(`<rect x="20" y="30" width="60" height="26" rx="6" fill="${c}"/><rect x="8" y="44" width="84" height="26" rx="8" fill="${c}"/><rect x="8" y="44" width="84" height="26" rx="8" fill="rgba(0,0,0,.12)"/><rect x="18" y="52" width="64" height="12" rx="4" fill="${c}"/><path d="M16 70v10M84 70v10" stroke="${c}" stroke-width="5"/>`),
+ chair:c=>S(`<rect x="30" y="12" width="40" height="42" rx="8" fill="${c}"/><rect x="24" y="50" width="52" height="14" rx="5" fill="${c}"/><rect x="24" y="50" width="52" height="14" rx="5" fill="rgba(0,0,0,.14)"/><path d="M30 64l-4 26M70 64l4 26" stroke="${c}" stroke-width="5"/>`),
+ table:c=>S(`<rect x="10" y="38" width="80" height="10" rx="3" fill="${c}"/><path d="M20 48v40M80 48v40M30 48v30M70 48v30" stroke="${c}" stroke-width="6"/>`),
+ bed:c=>S(`<rect x="10" y="22" width="12" height="62" rx="3" fill="${c}"/><rect x="18" y="50" width="74" height="22" rx="4" fill="${c}"/><rect x="26" y="40" width="22" height="12" rx="5" fill="${c}" opacity=".7"/><path d="M88 72v12" stroke="${c}" stroke-width="6"/>`),
+ lamp:c=>S(`<path d="M34 12h32l12 30H22z" fill="${c}"/><path d="M50 42v40" stroke="${c}" stroke-width="5"/><rect x="34" y="82" width="32" height="8" rx="4" fill="${c}"/>`),
+ fridge:c=>S(`<rect x="26" y="6" width="48" height="88" rx="8" fill="${c}"/><path d="M26 38h48" stroke="rgba(0,0,0,.18)" stroke-width="3"/><path d="M66 16v14M66 46v20" stroke="rgba(255,255,255,.7)" stroke-width="4" stroke-linecap="round"/>`),
+ micro:c=>S(`<rect x="8" y="26" width="84" height="50" rx="7" fill="${c}"/><rect x="16" y="34" width="50" height="34" rx="4" fill="rgba(0,0,0,.25)"/><circle cx="79" cy="42" r="4" fill="rgba(255,255,255,.7)"/><circle cx="79" cy="56" r="4" fill="rgba(255,255,255,.7)"/>`),
+ blender:c=>S(`<path d="M32 10h36l-6 50H38z" fill="${c}" opacity=".55"/><rect x="30" y="60" width="40" height="30" rx="6" fill="${c}"/><circle cx="50" cy="75" r="5" fill="rgba(255,255,255,.7)"/>`),
+ fan:c=>S(`<circle cx="50" cy="36" r="28" fill="none" stroke="${c}" stroke-width="4"/><path d="M50 36c-4-14 0-22 6-20s4 12-6 20zM50 36c14-2 20 4 16 9s-12 0-16-9zM50 36c-8 10-18 10-18 4s8-8 18-4z" fill="${c}"/><path d="M50 64v20" stroke="${c}" stroke-width="5"/><rect x="34" y="84" width="32" height="7" rx="3" fill="${c}"/>`),
+ tv:c=>S(`<rect x="6" y="16" width="88" height="54" rx="5" fill="${c}"/><rect x="11" y="21" width="78" height="44" rx="2" fill="rgba(255,255,255,.18)"/><path d="M36 84l14-14 14 14" stroke="${c}" stroke-width="5" fill="none"/>`),
+ gen:c=>S(`<rect x="12" y="30" width="76" height="46" rx="6" fill="${c}"/><rect x="20" y="38" width="30" height="18" rx="3" fill="rgba(255,255,255,.35)"/><path d="M12 30l10-12h56l10 12M20 76v10M80 76v10" stroke="${c}" stroke-width="5" fill="none"/><circle cx="70" cy="56" r="7" fill="rgba(0,0,0,.25)"/>`)
+};
+const DEPTS=[{k:"all",l:"All"},{k:"women",l:"Women"},{k:"men",l:"Men"},{k:"kids",l:"Kids"},{k:"home",l:"Home & furniture",n:1},{k:"appl",l:"Appliances",n:1}];
+const CATS={
+ women:[["Dresses","dress"],["Tops","top"],["Bottoms","jeans"],["Shoes","heel"],["Bags","bag"],["Swimwear","swim"]],
+ men:[["Shirts","top"],["Trousers","jeans"],["Native wear","agbada"],["Sneakers","shoe"]],
+ kids:[["Kids' clothes","kids"],["Kids' shoes","shoe"]],
+ home:[["Sofas","sofa"],["Chairs","chair"],["Tables","table"],["Beds","bed"],["Lighting","lamp"]],
+ appl:[["Fridges","fridge"],["Microwaves","micro"],["Blenders","blender"],["Fans","fan"],["TVs","tv"],["Generators","gen"]]
+};
+const BULKY=new Set(["home","appl"]);
+const STORES=[["Tolu's Closet","#C8364F",4.9],["Kicks by Dayo","#22306B",4.8],["Okrika Gold","#B07A12",4.7],["Adeola Stitches","#1E7A52",5.0],["Thrift with Amaka","#7B4FA0",4.9],["Lekki Home Finds","#8A4B2A",4.8],["Japa Sales Lagos","#1F6F8B",4.9],["Mama Twins Store","#D9572B",4.8],["Indigo House","#2C3E8C",4.9]];
+const sc=n=>(STORES.find(s=>s[0]===n)||[n,"#5D637C",5])[1];
+// i: id,t,brand,dept,cat,ic,col,bg,price,was,cond,city,area,seller,favs,ago,auction,tested
+const ITEMS=[
+ [1,"Ankara wrap midi dress","Handmade","women","Dresses","dress","#D9572B","#FBE3D6",14500,0,"Pre-owned","Lagos","Yaba","Tolu's Closet",11,"2h"],
+ [2,"3-seater fabric sofa, grey","Home Plus","home","Sofas","sofa","#6C7A93","#E3E8EF",185000,320000,"Pre-owned","Lagos","Lekki","Japa Sales Lagos",24,"3h"],
+ [3,"LG double-door fridge, 335L","LG","appl","Fridges","fridge","#B9C2CE","#E6EBF2",240000,410000,"Pre-owned","Lagos","Ikeja","Japa Sales Lagos",31,"4h",0,1],
+ [4,"Nike Air Force 1 '07","Nike","men","Sneakers","shoe","#F4F4F4","#DDE5F3",38000,0,"Pre-owned","Lagos","Lekki","Kicks by Dayo",9,"5h"],
+ [5,"Embroidered agbada set","Tailor made","men","Native wear","agbada","#2C6E5A","#DCEFE6",45000,60000,"New with tags","Ibadan","Bodija","Adeola Stitches",14,"6h"],
+ [6,"Silver sequin birthday dress","Zara","women","Dresses","dress","#8E97A8","#ECEEF3",68000,0,"Pre-owned","Abuja","Wuse 2","Thrift with Amaka",19,"8h"],
+ [7,"Binatone standing fan, 18\"","Binatone","appl","Fans","fan","#2B2E3A","#E7E3DA",22000,35000,"Pre-owned","Lagos","Surulere","Lekki Home Finds",6,"9h",0,1],
+ [8,"Solid wood dining table, 6 seats","Custom","home","Tables","table","#8A5A32","#F2E4D4",150000,0,"Pre-owned","Abuja","Garki","Lekki Home Finds",12,"10h",1],
+ [9,"Leather crossbody bag","Coach","women","Bags","bag","#8A4B2A","#F2E2D2",27500,55000,"Pre-owned","Port Harcourt","GRA","Okrika Gold",8,"12h"],
+ [10,"Samsung 43\" smart TV","Samsung","appl","TVs","tv","#1D2030","#DDE2EE",160000,260000,"Pre-owned","Lagos","Ajah","Japa Sales Lagos",27,"1d",0,1],
+ [11,"Rattan accent chair","Handmade","home","Chairs","chair","#C49A5B","#F6ECDD",42000,0,"New with tags","Lagos","Yaba","Indigo House",15,"1d"],
+ [12,"Vintage Levi's 501 jeans","Levi's","men","Trousers","jeans","#3E5E97","#E1E8F4",12000,0,"Pre-owned","Abuja","Wuse 2","Okrika Gold",4,"1d"],
+ [13,"Kids' Adidas tracksuit","Adidas","kids","Kids' clothes","kids","#C9302C","#F7DEDD",8500,12000,"Pre-owned","Lagos","Ikeja","Mama Twins Store",3,"1d"],
+ [14,"Polka dot bubble top","Shein","women","Tops","top","#4C86C6","#E1ECF7",12000,0,"New with tags","Lagos","Gbagada","Tolu's Closet",7,"2d"],
+ [15,"Scanfrost microwave, 20L","Scanfrost","appl","Microwaves","micro","#4A4E5C","#E8E8EC",38000,65000,"Pre-owned","Ibadan","Ring Road","Lekki Home Finds",5,"2d",0,1],
+ [16,"Block heel sandals","Aldo","women","Shoes","heel","#C99A5B","#F6ECDD",11000,25000,"Pre-owned","Abuja","Garki","Thrift with Amaka",6,"2d"],
+ [17,"Queen bed frame with headboard","Custom","home","Beds","bed","#5B4636","#EDE4DA",95000,140000,"Pre-owned","Lagos","Magodo","Japa Sales Lagos",9,"3d"],
+ [18,"Yaya bubble set","Fashion Nova","women","Swimwear","swim","#E58FA6","#FBE4EA",25000,30000,"New with tags","Lagos","Ajah","Tolu's Closet",13,"3d",1],
+ [19,"Firman 3.5kVA generator","Firman","appl","Generators","gen","#C8432B","#F7E1DA",310000,450000,"Pre-owned","Port Harcourt","Trans Amadi","Lekki Home Finds",22,"3d",0,1],
+ [20,"Adire tie-dye shirt","Abeokuta Adire","men","Shirts","top","#22306B","#E3E6F5",9000,0,"New with tags","Lagos","Ajah","Indigo House",10,"4d"],
+ [21,"Brass floor lamp","IKEA","home","Lighting","lamp","#C59A3C","#F7EFD9",28000,48000,"Pre-owned","Lagos","Lekki","Lekki Home Finds",4,"4d"],
+ [22,"Kenwood blender, 1.5L","Kenwood","appl","Blenders","blender","#7A8796","#E5EAF0",18000,30000,"Pre-owned","Abuja","Maitama","Japa Sales Lagos",3,"5d",0,1],
+ [23,"Satin slip dress","H&M","women","Dresses","dress","#7B4FA0","#ECE2F4",7500,0,"Pre-owned","Lagos","Gbagada","Tolu's Closet",2,"5d"],
+ [24,"Kids' light-up sneakers","Skechers","kids","Kids' shoes","shoe","#E2A23B","#FAEBD3",9500,0,"Pre-owned","Lagos","Ikeja","Mama Twins Store",5,"6d"]
+].map(a=>({id:a[0],t:a[1],b:a[2],dept:a[3],cat:a[4],ic:a[5],col:a[6],bg:a[7],price:a[8],was:a[9],cond:a[10],city:a[11],area:a[12],seller:a[13],favs:a[14],ago:a[15],auction:!!a[16],tested:!!a[17]}));
+
+const naira=n=>"₦"+Math.round(n).toLocaleString("en-NG");
+const fee=p=>300+p*0.05;
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const $=s=>document.querySelector(s);
+let st={dept:"all",cat:null,q:"",sort:"new",shown:15,saved:false,favs:new Set()};
+try{JSON.parse(localStorage.getItem("bn-favs")||"[]").forEach(i=>st.favs.add(i))}catch(e){}
+const off=it=>it.was?Math.round((1-it.price/it.was)*100):0;
+
+function card(it){
+  const b=[];
+  if(off(it))b.push(`<span class="bd off">-${off(it)}%</span>`);
+  if(it.auction)b.push(`<span class="bd auc">AUCTION</span>`);
+  b.push(it.cond==="New with tags"?`<span class="bd newt">NEW</span>`:`<span class="bd">PRE-OWNED</span>`);
+  const f=st.favs.has(it.id);
+  return `<div class="card">
+   <div class="pic" style="background:${it.bg}" data-open="${it.id}">${ICON[it.ic](it.col)}<div class="badges">${b.join("")}</div>
+    <button class="fav" aria-label="Save ${esc(it.t)}" aria-pressed="${f}" data-f="${it.id}"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 21s-7.5-4.6-9.6-9.2C.9 8.3 3 4 7 4c2.2 0 3.7 1.2 5 3 1.3-1.8 2.8-3 5-3 4 0 6.1 4.3 4.6 7.8C19.5 16.4 12 21 12 21z"/></svg>${it.favs+(f?1:0)}</button></div>
+   <button class="meta" data-open="${it.id}">
+    <span class="t">${esc(it.t)}</span>
+    <span class="p num">${naira(it.price)}${it.was?`<s>${naira(it.was)}</s>`:""}</span>
+    <small>${esc(it.seller)} <span class="tick">✓</span> · ${esc(it.area)}, ${esc(it.city)}</small>
+    <span class="safe">✓ ${naira(it.price+fee(it.price))} incl. protection</span>
+   </button></div>`;
+}
+function depts(){
+  $("#depts").innerHTML=DEPTS.map(d=>`<button class="dept" role="tab" aria-selected="${st.dept===d.k&&!st.saved}" data-dept="${d.k}">${d.l}${d.n?'<span class="new">NEW</span>':""}</button>`).join("");
+}
+function cats(){
+  const list=(st.dept==="all"||st.dept==="following")?[...CATS.women.slice(0,4),...CATS.home.slice(0,2),...CATS.appl.slice(0,3),CATS.men[2],CATS.kids[0]]:CATS[st.dept];
+  $("#catTitle").textContent=st.dept==="all"?"Shop by category":DEPTS.find(d=>d.k===st.dept).l;
+  $("#cats").innerHTML=list.map(([n,ic])=>`<button class="cat" aria-pressed="${st.cat===n}" data-cat="${n}"><span class="ci">${ICON[ic]("currentColor").replace('class="art"','')}</span>${n}</button>`).join("");
+  $("#clearCat").hidden=!st.cat;
+}
+function stores(){
+  $("#stores").innerHTML=STORES.map(([n,c,r])=>`<button class="store" data-profile="${esc(n)}"><span class="av" style="background:${c}">${n[0]}</span><span>${esc(n)}<span class="tick">✓</span><small>★ ${r.toFixed(1)}</small></span></button>`).join("");
+  $("#trend").innerHTML=[...ITEMS].sort((a,b)=>b.favs-a.favs).slice(0,8).map(card).join("");
+  $("#tiles").innerHTML=[ITEMS[1],ITEMS[2],ITEMS[7],ITEMS[9],ITEMS[10],ITEMS[18]].map(it=>`<button class="tile" style="background:${it.bg}" data-open="${it.id}" aria-label="${esc(it.t)}">${ICON[it.ic](it.col)}<span class="num">${naira(it.price)}</span></button>`).join("");
+}
+function render(){
+  let list=ITEMS.filter(i=>(st.saved?st.favs.has(i.id):true)
+    &&(st.dept==="all"||i.dept===st.dept||(st.dept==="following"&&FOLLOWS.has(i.seller)))&&(!st.cat||i.cat===st.cat)
+    &&(!st.q||(i.t+" "+i.b+" "+i.cat+" "+i.seller).toLowerCase().includes(st.q.toLowerCase())));
+  if(st.sort==="low")list.sort((a,b)=>a.price-b.price);
+  if(st.sort==="high")list.sort((a,b)=>b.price-a.price);
+  if(st.sort==="deal")list.sort((a,b)=>off(b)-off(a));
+  const filtered=st.saved||st.q||st.cat||st.dept!=="all";
+  $("#heading").textContent=st.saved?"Saved items":st.q?`Results for “${st.q}”`:st.cat||(st.dept==="all"?"Explore":DEPTS.find(d=>d.k===st.dept).l);
+  $("#sub").textContent=filtered?`${list.length} item${list.length===1?"":"s"}`:"Curated for you";
+  ["#storesBlk","#trendBlk","#spot"].forEach(s=>$(s).hidden=filtered);
+  $("#grid").innerHTML=list.length?list.slice(0,st.shown).map(card).join(""):`<p class="empty">${st.dept==="following"?"Nothing here yet. Follow stores from their profile to see their new listings here.":"Nothing here yet. Try another search or category."}</p>`;
+  $("#moreBtn").parentElement.hidden=list.length<=st.shown;
+  const n=st.favs.size;$("#favN").hidden=!n;$("#favN").textContent=n;
+}
+function all(){depts();cats();render()}
+function open(html){$("#sheet").innerHTML=html;$("#layer").hidden=false;$("#sheet").scrollTop=0;const x=$("#sheet .x");x&&x.focus()}
+function close(){$("#layer").hidden=true}
+function toast(m){const t=$("#toast");t.textContent=m;t.hidden=false;clearTimeout(toast.h);toast.h=setTimeout(()=>t.hidden=true,2600)}
+const head=t=>`<div class="shead"><strong>${t}</strong><button class="x" aria-label="Close">×</button></div>`;
+const get=id=>ITEMS.find(i=>i.id==id);
+
+function item(id){
+  const it=get(id),bulky=BULKY.has(it.dept);
+  open(`${head(it.cat)}
+   <div class="pic" style="background:${it.bg}">${ICON[it.ic](it.col)}</div>
+   <div><h2>${esc(it.t)}</h2><div class="big num" style="margin-top:6px">${naira(it.price)}${it.was?`<s>${naira(it.was)}</s>`:""}</div>
+   <small class="safe">✓ ${naira(it.price+fee(it.price))} with buyer protection</small></div>
+   <div class="tags"><span class="tag">${esc(it.b)}</span>${bulky?"":`<span class="tag">Size ${it.dept==="men"?"L":"M"}</span>`}<span class="tag">${it.cond}</span><span class="tag">${esc(it.area)}, ${it.city}</span>${it.tested?'<span class="tag">Tested and working</span>':""}</div>
+   ${it.auction?`<div class="note warm"><b>Auction ends in 6h 20m.</b> Current bid ${naira(it.price)}. Your money is only taken if you win.</div>`:""}
+   ${bulky?`<div class="note warm"><b>Bulky item.</b> Delivered by van within ${it.city}. You can also arrange pickup and still pay safely in the app.</div>`:""}
+   <button class="seller sbtn" data-profile="${esc(it.seller)}"><span class="av" style="background:${sc(it.seller)}">${it.seller[0]}</span><div style="flex:1;min-width:0"><b>${esc(it.seller)} <span class="tick">✓</span></b><small>★ ${prof(it.seller).sr.toFixed(1)} as seller · ★ ${prof(it.seller).br.toFixed(1)} as buyer · ${prof(it.seller).followers.toLocaleString()} followers</small></div><span style="color:var(--muted)">›</span></button>
+   <div class="note"><b>Protected purchase.</b> We hold your money until you confirm the item arrived as described${it.tested?" and works":""}.</div>
+   <div class="two"><button class="btn ghost" data-chat>${it.auction?"Ask a question":"Make an offer"}</button><button class="btn" data-buy="${it.id}">${it.auction?"Place a bid":"Buy now"}</button></div>`);
+}
+function checkout(id,k){
+  const it=get(id),bulky=BULKY.has(it.dept),lag=it.city==="Lagos";
+  const opts=bulky?[
+    {k:"van",l:"Van delivery to your door",d:`Within ${it.city} · 1–3 days · 2 handlers`,p:lag?15000:18000},
+    {k:"inter",l:"Van to another city",d:"Partner haulage · 3–7 days",p:45000},
+    {k:"self",l:"I'll pick it up myself",d:`From ${it.area} · payment still held until you confirm`,p:0}]:[
+    {k:"rider",l:"Dispatch rider to your door",d:lag?"Within Lagos · same or next day":`${it.city} riders · 1–2 days`,p:lag?2500:2800},
+    {k:"courier",l:"Courier to another city",d:"Partner courier · 2–5 days",p:4500},
+    {k:"pickup",l:"Pickup point",d:"Collect from a partner shop near you",p:1500}];
+  k=k||opts[0].k;
+  const d=opts.find(o=>o.k===k).p,f=fee(it.price);
+  open(`${head("Checkout")}
+   <div class="seller"><div class="pic" style="background:${it.bg};width:64px;aspect-ratio:1/1;border-radius:10px;flex:none">${ICON[it.ic](it.col)}</div><div style="flex:1;min-width:0"><b>${esc(it.t)}</b><small>${esc(it.seller)} · ${it.area}, ${it.city}</small></div></div>
+   <fieldset><legend>Delivery</legend>${opts.map(o=>`<label class="opt"><input type="radio" name="dl" value="${o.k}" ${o.k===k?"checked":""}><span>${o.l}<small>${o.d}</small></span><b class="num">${o.p?naira(o.p):"Free"}</b></label>`).join("")}</fieldset>
+   <div class="lines">
+    <div class="line"><span>Item</span><span class="num">${naira(it.price)}</span></div>
+    <div class="line"><span>Buyer protection<br><small>₦300 + 5%, covers refunds</small></span><span class="num">${naira(f)}</span></div>
+    <div class="line"><span>Delivery</span><span class="num">${d?naira(d):"Free"}</span></div>
+    <div class="line total"><span>You pay</span><span class="num">${naira(it.price+f+d)}</span></div>
+   </div>
+   <fieldset><legend>Pay with</legend>
+    <label class="opt"><input type="radio" name="pm" checked><span>Card<small>Visa, Mastercard, Verve</small></span></label>
+    <label class="opt"><input type="radio" name="pm"><span>Bank transfer<small>Pay into a one-time account number</small></span></label>
+    <label class="opt"><input type="radio" name="pm"><span>USSD<small>Dial a code from any bank</small></span></label>
+   </fieldset>
+   <button class="btn block" data-pay="${it.id}">Pay ${naira(it.price+f+d)} securely</button>
+   <p class="sample">Payments by Paystack. The seller is paid only after you confirm delivery, or 2 days after it arrives with no problem reported.</p>`);
+  document.querySelectorAll('input[name="dl"]').forEach(r=>r.onchange=e=>checkout(id,e.target.value));
+}
+function tracking(id){
+  const it=get(id||3),bulky=BULKY.has(it.dept);
+  open(`${head("Order #20471")}
+   <div class="note"><b>${naira(it.price)} is held safely.</b> ${esc(it.seller)} gets paid after you confirm the item is fine.</div>
+   <div class="track">
+    <div class="tk done"><div class="dot">✓</div><div><b>Payment received</b><small>Today, 9:14 am · held by us</small></div></div>
+    <div class="tk done"><div class="dot">✓</div><div><b>Seller ${bulky?"got the item ready":"packed your item"}</b><small>Today, 11:02 am</small></div></div>
+    <div class="tk now"><div class="dot">•</div><div><b>${bulky?"Van":"Rider"} on the way</b><small>Picked up from ${esc(it.area)} · arriving 3–5 pm</small></div></div>
+    <div class="tk"><div class="dot">4</div><div><b>Check your item</b><small>You have 2 days to ${it.tested?"plug it in, test it and ":""}confirm or report a problem</small></div></div>
+    <div class="tk"><div class="dot">5</div><div><b>Seller gets paid</b><small>Money released to their bank</small></div></div>
+   </div>
+   <div class="two"><button class="btn ghost" data-report>Report a problem</button><button class="btn" data-ok="${it.id}">Item received, all good</button></div>`);
+}
+function sell(){
+  const opts=Object.entries(CATS).map(([d,l])=>`<optgroup label="${DEPTS.find(x=>x.k===d).l}">${l.map(([n])=>`<option value="${d}|${n}">${n}</option>`).join("")}</optgroup>`).join("");
+  open(`${head("Sell an item")}
+   <div class="drop">Add up to 8 photos<br><small>Natural light. For appliances, show it switched on.</small><br><input id="ph" type="file" accept="image/*" multiple style="margin-top:10px;max-width:100%"></div>
+   <label class="f" for="st">Title<input id="st" placeholder="e.g. 3-seater sofa, or Ankara midi dress"></label>
+   <div class="two"><label class="f" for="sc">Category<select id="sc">${opts}</select></label>
+   <label class="f" for="sd">Condition<select id="sd"><option>New with tags</option><option>Pre-owned</option></select></label></div>
+   <div class="two"><label class="f" for="sb">Brand<input id="sb" placeholder="Zara, LG, handmade…"></label>
+   <label class="f" for="ss" id="ssl">Size<input id="ss" placeholder="UK 12, EU 43, M"></label></div>
+   <label class="f" for="sp">Price (₦)<input id="sp" type="number" inputmode="numeric" placeholder="15000" min="500"></label>
+   <div class="lines"><div class="line"><span>You receive</span><span class="num" id="earnv">₦0</span></div><small style="color:var(--muted)">Selling is free. The buyer pays the protection fee and delivery.</small></div>
+   <button class="btn block" id="post">Post listing</button>`);
+  $("#sp").oninput=e=>$("#earnv").textContent=naira(+e.target.value||0);
+  $("#sc").onchange=e=>{const b=BULKY.has(e.target.value.split("|")[0]);$("#ssl").firstChild.textContent=b?"Dimensions":"Size";$("#ss").placeholder=b?"e.g. 210 × 90 cm":"UK 12, EU 43, M"};
+}
+
+document.addEventListener("click",e=>{
+  const t=e.target.closest("button,[data-open]");if(!t)return;
+  const ds=t.dataset;
+  if(ds.dept){st={...st,dept:ds.dept,cat:null,saved:false,shown:15};close();all();if(t.closest("#spot"))$("#cats").scrollIntoView({behavior:"smooth",block:"center"})}
+  else if(ds.cat){st.cat=st.cat===ds.cat?null:ds.cat;st.shown=12;cats();render()}
+  else if(ds.f){const id=+ds.f;st.favs.has(id)?st.favs.delete(id):st.favs.add(id);try{localStorage.setItem("bn-favs",JSON.stringify([...st.favs]))}catch(_){};render();stores();toast(st.favs.has(id)?"Saved":"Removed from saved")}
+  else if(ds.open)item(ds.open);
+  else if(ds.buy)checkout(ds.buy);
+  else if(ds.pay){tracking(ds.pay);toast("Payment received. Your money is held safely.")}
+  else if("chat" in ds)toast("Chat opens here. Offers and messages stay in the app.");
+    else if(ds.toast)toast(ds.toast);
+  else if("ok" in ds){rate(ds.ok)}
+  else if("report" in ds){close();toast("Payout frozen. Our team will reply within 48 hours.")}
+  else if(t.classList.contains("x"))close();
+  else if(t.id==="post"){const ti=$("#st").value.trim(),p=+$("#sp").value;if(!ti||!p){toast("Add a title and a price to post.");return}
+    const [d,c]=$("#sc").value.split("|");const ic=CATS[d].find(x=>x[0]===c)[1];
+    ITEMS.unshift({id:Date.now(),t:ti,b:$("#sb").value||"No brand",dept:d,cat:c,ic,col:"#22306B",bg:"#E3E6F5",price:p,was:0,cond:$("#sd").value,city:"Lagos",area:"Yaba",seller:ME?ME.name:"You",favs:0,ago:"now",auction:false,tested:d==="appl"});
+    close();st={...st,dept:"all",cat:null,q:"",saved:false};$("#q").value="";all();toast("Listed! Your item is live.")}
+  else if(t.id==="sellBtn"||t.id==="heroSell")sell();
+  else if(t.id==="ordersBtn")tracking(3);
+  else if(t.id==="savedBtn"){st={...st,saved:true,cat:null};all();$("#heading").scrollIntoView({behavior:"smooth"})}
+  else if(t.id==="moreBtn"){st.shown+=15;render()}
+  else if(t.id==="clearCat"){st.cat=null;cats();render()}
+  else if(t.id==="heroShop")$("#cats").scrollIntoView({behavior:"smooth"});
+  else if(t.id==="home"){st={...st,dept:"all",cat:null,q:"",saved:false,shown:15};$("#q").value="";all();scrollTo({top:0,behavior:"smooth"})}
+});
+$("#scrim").onclick=close;
+document.addEventListener("keydown",e=>{if(e.key==="Escape")close()});
+$("#q").oninput=e=>{st.q=e.target.value.trim();st.saved=false;render()};
+$("#sort").onchange=e=>{st.sort=e.target.value;render()};
+/* ---------- accounts, profiles, follows, two-way ratings ---------- */
+let ME=null,pending=null,ptab="listings",stars=0;const FOLLOWS=new Set();
+try{ME=JSON.parse(localStorage.getItem("bn-me")||"null");JSON.parse(localStorage.getItem("bn-follows")||"[]").forEach(x=>FOLLOWS.add(x))}catch(e){}
+const saveMe=()=>{try{localStorage.setItem("bn-me",JSON.stringify(ME));localStorage.setItem("bn-follows",JSON.stringify([...FOLLOWS]))}catch(e){}};
+const CITIES=["Lagos","Abuja","Ibadan","Port Harcourt","Lekki","Ikeja"];
+const PEOPLE=[["Chioma A.","#B5523B"],["Bayo O.","#4A3426"],["Ngozi E.","#5E7A3C"],["Femi K.","#1F6F8B"],["Halima S.","#7B4FA0"],["Uche N.","#B07A12"],["Kemi L.","#C8364F"],["Tunde B.","#2C3E8C"]];
+const REVIEWS=[
+ ["Chioma A.","buyer",5,"Exactly as described and it came the next day. Will buy again.","Ankara wrap midi dress"],
+ ["Bayo O.","buyer",5,"Well packed, seller answered every question quickly.","Nike Air Force 1 '07"],
+ ["Ngozi E.","buyer",4,"Good condition, delivery took 3 days instead of 2.","Leather crossbody bag"],
+ ["Femi K.","seller",5,"Paid fast and confirmed delivery the same day. Great buyer.","Adire tie-dye shirt"],
+ ["Halima S.","buyer",5,"Fridge works perfectly, the van guys carried it upstairs.","LG double-door fridge, 335L"],
+ ["Uche N.","seller",5,"Polite and easy to deal with.","Satin slip dress"]];
+function prof(name){
+  if(ME&&name===ME.name)return{name,color:"#4A3426",handle:ME.handle,city:ME.city,joined:"Joined today",followers:0,following:FOLLOWS.size,sales:0,sr:0,sn:0,br:0,bn:0,me:true};
+  const i=Math.max(0,STORES.findIndex(s=>s[0]===name)),s=STORES[i]||[name,"#76695C",4.8];
+  return{name,color:s[1],handle:name.toLowerCase().replace(/[^a-z0-9]+/g,"_").replace(/_$/,""),city:CITIES[i%CITIES.length],joined:`Joined ${["Mar 2024","Nov 2023","Jan 2025","Jun 2024"][i%4]}`,
+    followers:[1240,3380,860,410,2210,690,1530,520,980][i%9],following:[87,140,52,33,201,18,64,45,90][i%9],sales:[212,540,98,37,330,76,154,61,120][i%9],sr:s[2],sn:[212,540,98,37,330,76,154,61,120][i%9],br:[5.0,4.9,4.8,5.0,4.9,5.0,4.8,4.9,5.0][i%9],bn:[34,61,12,9,48,15,27,8,20][i%9]};
+}
+const starTxt=(r,n,who)=>n?`<b>★ ${r.toFixed(1)}</b><small>${n} reviews ${who}</small>`:`<b>New</b><small>No reviews yet</small>`;
+function personRow(n,c,extra){const f=FOLLOWS.has(n),known=STORES.some(s=>s[0]===n);
+  return `<div class="prow"><button class="sbtn prow-l" ${known?`data-profile="${esc(n)}"`:"tabindex=-1"}><span class="av" style="background:${c}">${n[0]}</span><span><b>${esc(n)}</b><small>${extra}</small></span></button>${ME&&n===ME.name?"":`<button class="btn ${f?"ghost":""} sm" data-follow="${esc(n)}">${f?"Following":"Follow"}</button>`}</div>`}
+function profile(name,tab){
+  ptab=tab||ptab;const P=prof(name),f=FOLLOWS.has(name),mine=ITEMS.filter(i=>i.seller===name);
+  let body="";
+  if(ptab==="listings")body=mine.length?`<div class="grid mini">${mine.map(card).join("")}</div>`:`<p class="empty">${P.me?"You haven't listed anything yet.":"No listings right now."}</p>`;
+  if(ptab==="reviews")body=P.me?`<p class="empty">Reviews appear here after your first sale or purchase. Buyers rate you as a seller, and sellers rate you as a buyer.</p>`:REVIEWS.map(([n,role,r,txt,it])=>`<div class="rev"><div class="line"><b>${n}</b><span class="stars-s">${"★".repeat(r)}${"☆".repeat(5-r)}</span></div><span class="bd ${role==="seller"?"auc":""}">${role==="buyer"?"Rated as a seller, by a buyer":"Rated as a buyer, by a seller"}</span><p>${txt}</p><small>${esc(it)}</small></div>`).join("");
+  if(ptab==="followers")body=P.me?`<p class="empty">No followers yet. Share your profile link to get your first followers.</p>`:PEOPLE.map(([n,c],k)=>personRow(n,c,`★ ${[5,4.9,4.8,5][k%4].toFixed(1)} as a buyer`)).join("");
+  if(ptab==="following")body=P.me?(FOLLOWS.size?[...FOLLOWS].map(n=>personRow(n,sc(n),`${ITEMS.filter(i=>i.seller===n).length} items for sale`)).join(""):`<p class="empty">You're not following anyone yet. Follow stores to see their new listings in your Following feed.</p>`):STORES.filter(s=>s[0]!==name).slice(0,6).map(s=>personRow(s[0],s[1],`★ ${s[2].toFixed(1)} as a seller`)).join("");
+  open(`${head(P.me?"My profile":"Profile")}
+   <div class="phead"><span class="av xl" style="background:${P.color}">${esc(name[0])}</span><div style="min-width:0"><h2>${esc(name)} ${P.me?"":'<span class="tick">✓</span>'}</h2><small>@${esc(P.handle)} · ${P.city} · ${P.joined}</small></div></div>
+   <div class="stats">
+    <button data-ptab="followers" data-who="${esc(name)}"><b class="num">${(P.followers+(f?1:0)).toLocaleString()}</b>Followers</button>
+    <button data-ptab="following" data-who="${esc(name)}"><b class="num">${P.following}</b>Following</button>
+    <button data-ptab="listings" data-who="${esc(name)}"><b class="num">${mine.length}</b>Listings</button>
+   </div>
+   <div class="two"><div class="rate"><small>As a seller</small>${starTxt(P.sr,P.sn,"from buyers")}</div><div class="rate"><small>As a buyer</small>${starTxt(P.br,P.bn,"from sellers")}</div></div>
+   ${P.me?`<div class="two"><button class="btn ghost" data-toast="Edit profile opens here.">Edit profile</button><button class="btn" id="sellBtn2">Sell an item</button></div><button class="link" data-signout style="justify-self:start">Sign out</button>`
+         :`<div class="two"><button class="btn ${f?"ghost":""}" data-follow="${esc(name)}">${f?"Following ✓":"Follow"}</button><button class="btn ghost" data-chat>Message</button></div>`}
+   <div class="ptabs" role="tablist">${[["listings","Listings"],["reviews","Reviews"],["followers","Followers"],["following","Following"]].map(([k,l])=>`<button role="tab" aria-selected="${ptab===k}" data-ptab="${k}" data-who="${esc(name)}">${l}</button>`).join("")}</div>
+   <div class="pbody">${body}</div>`);
+}
+function signup(step){
+  step=step||1;
+  const dots=`<div class="steps">${[1,2,3].map(i=>`<span class="${i<=step?"on":""}"></span>`).join("")}</div>`;
+  if(step===1)open(`${head("Create your profile")}${dots}
+   <h2>Join to buy and sell</h2><p class="sample" style="font-size:14px">You need a profile before you can buy, sell, make offers or follow stores. It keeps everyone accountable.</p>
+   <label class="f" for="ph1">Phone number<div class="phone"><span>🇳🇬 +234</span><input id="ph1" inputmode="tel" placeholder="803 123 4567" value="803 123 4567"></div></label>
+   <button class="btn block" data-step="2">Send code by SMS</button>
+   <p class="sample">Already have a profile? Enter the same number to sign in.</p>`);
+  if(step===2)open(`${head("Create your profile")}${dots}
+   <h2>Enter the 6-digit code</h2><p class="sample" style="font-size:14px">We sent it to +234 ${esc(($("#ph1")||{}).value||"803 123 4567")}. In this demo, any 6 digits work.</p>
+   <label class="f" for="otp">Code<input id="otp" class="otp" inputmode="numeric" maxlength="6" value="482913"></label>
+   <button class="btn block" data-step="3">Verify</button>`);
+  if(step===3)open(`${head("Create your profile")}${dots}
+   <h2>Set up your profile</h2>
+   <div class="phead"><span class="av xl" style="background:var(--indigo)">+</span><label class="f" for="pp" style="flex:1">Profile photo<input id="pp" type="file" accept="image/*"></label></div>
+   <label class="f" for="pn">Full name<input id="pn" placeholder="e.g. Timi Ore"></label>
+   <div class="two"><label class="f" for="pu">Username<input id="pu" placeholder="timi_closet"></label>
+   <label class="f" for="pc">City<select id="pc">${["Lagos","Abuja","Port Harcourt","Ibadan","Kano","Enugu","Benin City"].map(c=>`<option>${c}</option>`).join("")}</select></label></div>
+   <fieldset><legend>I'm here to</legend><div class="two"><label class="opt"><input type="radio" name="goal" checked><span>Buy and sell</span></label><label class="opt"><input type="radio" name="goal"><span>Mostly buy</span></label></div></fieldset>
+   <label class="opt"><input type="checkbox" id="terms" checked><span><small>I agree to the terms, the buyer protection rules, and to keep payments and chats inside the app.</small></span></label>
+   <button class="btn block" data-step="done">Create profile</button>`);
+}
+function rate(id){
+  const it=get(id||3);stars=0;
+  open(`${head("Rate your order")}
+   <div class="note"><b>Item confirmed.</b> ${esc(it.seller)} has been paid for ${esc(it.t)}.</div>
+   <h2>How was ${esc(it.seller)} as a seller?</h2>
+   <div class="starpick" role="radiogroup" aria-label="Stars">${[1,2,3,4,5].map(n=>`<button role="radio" aria-checked="false" data-star="${n}" aria-label="${n} star${n>1?"s":""}">★</button>`).join("")}</div>
+   <div class="tags">${["As described","Fast delivery","Well packed","Friendly","Good value"].map(x=>`<button class="tag tg" aria-pressed="false" data-tg>${x}</button>`).join("")}</div>
+   <label class="f" for="rv">Review (optional)<textarea id="rv" rows="3" placeholder="What should other buyers know?"></textarea></label>
+   <button class="btn block" data-sendrate="${esc(it.seller)}">Post review</button>
+   <p class="sample">${esc(it.seller)} will also rate you as a buyer. Both reviews appear at the same time, once you've both rated or after 7 days, so nobody rates in revenge.</p>`);
+}
+function updateMe(){
+  $("#authBtn").hidden=!!ME;$("#meBtn").hidden=!ME;
+  if(ME)$("#meAv").textContent=ME.name[0].toUpperCase();
+}
+function resume(p){
+  if(!p)return close();
+  if(p.buy)checkout(p.buy);else if(p.sell)sell();else if(p.orders)tracking(3);
+  else if(p.follow){FOLLOWS.add(p.follow);saveMe();profile(p.follow);toast(`Following ${p.follow}`)}
+  else if(p.dept){close();st={...st,dept:"following",cat:null,saved:false};all()}
+  else if(p.chat){close();toast("Chat opens here. Offers and messages stay in the app.")}
+  else close();
+}
+DEPTS.splice(1,0,{k:"following",l:"Following"});
+// gate: profile required to buy, sell, offer, follow, see your feed
+document.addEventListener("click",e=>{
+  const t=e.target.closest("button,[data-open]");if(!t||ME)return;
+  const d=t.dataset;let p=null;
+  if(d.buy)p={buy:d.buy};else if("chat" in d)p={chat:1};else if(d.follow)p={follow:d.follow};
+  else if(d.dept==="following")p={dept:1};else if(["sellBtn","heroSell","sellBtn2"].includes(t.id))p={sell:1};else if(t.id==="ordersBtn")p={orders:1};
+  if(p){e.stopImmediatePropagation();e.preventDefault();pending=p;signup(1)}
+},true);
+document.addEventListener("click",e=>{
+  const t=e.target.closest("button");if(!t)return;const d=t.dataset;
+  if(d.profile){profile(d.profile,"listings")}
+  else if(d.ptab){profile(d.who,d.ptab)}
+  else if(d.follow){const n=d.follow;FOLLOWS.has(n)?FOLLOWS.delete(n):FOLLOWS.add(n);saveMe();toast(FOLLOWS.has(n)?`Following ${n}. Their new items show in your Following feed.`:`Unfollowed ${n}`);
+    const who=$("#sheet [data-who]");if(!$("#layer").hidden&&who)profile(who.dataset.who);if(st.dept==="following")render()}
+  else if(d.step==="2"||d.step==="3")signup(+d.step);
+  else if(d.step==="done"){const n=$("#pn").value.trim(),u=$("#pu").value.trim().replace(/^@/,"");
+    if(!n||!u){toast("Add your name and a username.");return}
+    if(!$("#terms").checked){toast("Tick the box to accept the terms.");return}
+    ME={name:n,handle:u,city:$("#pc").value};saveMe();updateMe();toast(`Welcome, ${n.split(" ")[0]}! Your profile is ready.`);const p=pending;pending=null;resume(p)}
+  else if(t.id==="authBtn"){pending=null;signup(1)}
+  else if(t.id==="meBtn"){profile(ME.name,"listings")}
+  else if(t.id==="sellBtn2")sell();
+  else if("signout" in d){ME=null;saveMe();updateMe();close();if(st.dept==="following"){st.dept="all";all()}toast("Signed out")}
+  else if(d.star){stars=+d.star;document.querySelectorAll("[data-star]").forEach(b=>b.setAttribute("aria-checked",+b.dataset.star<=stars))}
+  else if("tg" in d){t.setAttribute("aria-pressed",t.getAttribute("aria-pressed")!=="true")}
+  else if(d.sendrate){if(!stars){toast("Tap the stars to choose a rating.");return}close();toast(`Thanks! Your ${stars}-star review of ${d.sendrate} is posted.`)}
+});
+stores();all();updateMe();
+</script>
