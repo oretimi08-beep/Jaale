@@ -31,13 +31,17 @@ export const getViewer = cache(async (): Promise<Viewer | null> => {
   if (!claims?.sub) return null;
   const { data: profile } = await supabase.from("profiles").select("*").eq("id", claims.sub).maybeSingle();
   const email = ((claims.email as string) ?? "").toLowerCase() || null;
-  // Admins are listed by email in ADMIN_EMAILS. Signing in needs a confirmed email, so nobody can claim one.
-  const admins = (process.env.ADMIN_EMAILS ?? "").toLowerCase().split(",").map((e) => e.trim()).filter(Boolean);
+  // An admin must match BOTH lists: their email (ADMIN_EMAILS) and their exact account id (ADMIN_USER_IDS).
+  // The id check matters while email confirmation is off: anyone could sign up with an admin's email,
+  // but they'd get a different account id.
+  const list = (v?: string) => (v ?? "").toLowerCase().split(",").map((e) => e.trim()).filter(Boolean);
+  const admins = list(process.env.ADMIN_EMAILS);
+  const adminIds = list(process.env.ADMIN_USER_IDS);
   return {
     userId: claims.sub,
     email,
     profile: (profile as Profile) ?? null,
-    isAdmin: !!email && admins.includes(email),
+    isAdmin: !!email && admins.includes(email) && adminIds.includes(claims.sub.toLowerCase()),
     banned: !!(profile as Profile | null)?.banned_at,
   };
 });
