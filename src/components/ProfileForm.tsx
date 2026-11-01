@@ -112,7 +112,7 @@ export function ProfileForm({ mode, next, initial = {} }: { mode: "create" | "ed
       </fieldset>
       {mode === "create" && (
         <label className="opt">
-          <input type="checkbox" name="terms" required />
+          <input type="checkbox" name="terms" required defaultChecked={state?.fields?.terms === "on"} />
           <span>
             <small>I agree to the terms, the buyer protection rules, and to keep payments and chats inside the app.</small>
           </span>

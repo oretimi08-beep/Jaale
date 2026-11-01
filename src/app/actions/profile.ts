@@ -56,7 +56,7 @@ export async function createProfile(_: FormState, form: FormData): Promise<FormS
   if (!viewer) redirect("/signup");
   const next = safeNext(form.get("next"));
   const p = readProfileForm(form);
-  const fields = { ...p };
+  const fields = { ...p, terms: form.get("terms") === "on" ? "on" : "" };
   const problem = validate(p);
   if (problem) return { error: problem, fields };
   if (form.get("terms") !== "on") return { error: "Tick the box to accept the terms.", fields };

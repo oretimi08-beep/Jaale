@@ -184,7 +184,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<Sea
                   <span>
                     {s.full_name}
                     {s.verified_bank && <span className="tick">✓</span>}
-                    <small>{s.listing_count} items · {s.follower_count} followers</small>
+                    <small>{s.listing_count} item{s.listing_count === 1 ? "" : "s"} · {s.follower_count} follower{s.follower_count === 1 ? "" : "s"}</small>
                   </span>
                 </Link>
               ))}
