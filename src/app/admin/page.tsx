@@ -67,12 +67,16 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
   if (tab === "payouts") {
     const { data } = await db
       .from("payouts")
-      .select("id, amount_kobo, status, created_at, order:orders(number, listing_title), seller:profiles(full_name, username)")
+      .select("id, seller_id, amount_kobo, status, created_at, order:orders(number, listing_title), seller:profiles(full_name, username)")
       .order("status", { ascending: false })
       .order("created_at", { ascending: false })
       .limit(100);
-    type P = { id: string; amount_kobo: number; status: string; created_at: string; order: { number: number; listing_title: string }; seller: { full_name: string; username: string } };
+    type P = { id: string; seller_id: string; amount_kobo: number; status: string; created_at: string; order: { number: number; listing_title: string }; seller: { full_name: string; username: string } };
     const rows = (data ?? []) as unknown as P[];
+    const { data: accounts } = rows.length
+      ? await db.from("payout_accounts").select("user_id, bank_name, account_number, account_name").in("user_id", [...new Set(rows.map((r) => r.seller_id))])
+      : { data: [] };
+    const bankOf = (id: string) => (accounts ?? []).find((a) => a.user_id === id);
     body = rows.length ? (
       <>
         <p className="sample">Bank transfers aren&apos;t automatic yet. Pay the seller yourself, then mark it paid here.</p>
@@ -81,6 +85,14 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
             <div style={{ flex: 1, minWidth: 0 }}>
               <b className="num">{naira(p.amount_kobo)}</b> to <Link className="link" href={`/u/${p.seller.username}`}>{p.seller.full_name}</Link>
               <small>#{p.order.number} · {p.order.listing_title} · {when(p.created_at)}</small>
+              {p.status === "pending" &&
+                (bankOf(p.seller_id) ? (
+                  <small style={{ color: "var(--fg)" }}>
+                    Pay to: <b>{bankOf(p.seller_id)!.bank_name} · {bankOf(p.seller_id)!.account_number}</b> · {bankOf(p.seller_id)!.account_name}
+                  </small>
+                ) : (
+                  <small style={{ color: "var(--danger)" }}>No bank account yet. Ask the seller to add one in Settings.</small>
+                ))}
             </div>
             {p.status === "pending" ? <PayoutPaidButton payoutId={p.id} /> : <span className="bd newt">PAID</span>}
           </div>

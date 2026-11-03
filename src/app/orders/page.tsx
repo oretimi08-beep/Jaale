@@ -5,6 +5,7 @@ import { naira } from "@/lib/money";
 import { STATUS_LABEL } from "@/lib/orders";
 import { autoRelease, type OrderRow } from "@/lib/order-service";
 import { createClient } from "@/lib/supabase/server";
+import { BankReminder } from "@/components/BankReminder";
 
 export const metadata = { title: "My orders" };
 
@@ -36,6 +37,7 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
           <Link href="/orders" aria-current={tab === "purchases" ? "page" : undefined}>Buying</Link>
           <Link href="/orders?tab=sales" aria-current={tab === "sales" ? "page" : undefined}>Selling</Link>
         </nav>
+        {tab === "sales" && <BankReminder userId={viewer.userId} text="We need it to send you the money from your sales." />}
         <div className="pbody">
           {orders.length ? (
             orders.map((o) => (

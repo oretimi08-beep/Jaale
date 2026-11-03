@@ -7,6 +7,7 @@ import { autoRelease, confirmPayment, type OrderRow } from "@/lib/order-service"
 import { createClient } from "@/lib/supabase/server";
 import { OrderActions } from "@/components/OrderActions";
 import { AutoRefresh } from "@/components/AutoRefresh";
+import { BankReminder } from "@/components/BankReminder";
 
 export const metadata = { title: "Order" };
 
@@ -134,7 +135,7 @@ export default async function OrderPage({ params, searchParams }: { params: Prom
         )}
         {s === "completed" && (
           <div className="note">
-            <b>Completed.</b> {role === "seller" ? `${naira(order.item_kobo)} is yours. Payouts to your bank are coming soon.` : "Thanks for buying on Jaale."}
+            <b>Completed.</b> {role === "seller" ? `${naira(order.item_kobo)} is yours and will be sent to your bank account.` : "Thanks for buying on Jaale."}
           </div>
         )}
         {s === "completed" &&
@@ -180,6 +181,9 @@ export default async function OrderPage({ params, searchParams }: { params: Prom
           )}
         </div>
 
+        {role === "seller" && order.paid_at && !["refunded", "cancelled"].includes(s) && (
+          <BankReminder userId={viewer.userId} text="We can't send you this money until you add one." />
+        )}
         {role === "seller" && order.paid_at && (
           <div className="lines">
             <b>Delivery: {order.delivery_label}</b>

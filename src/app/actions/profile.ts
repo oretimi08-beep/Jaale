@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { BANNED_MESSAGE, getViewer } from "@/lib/data";
 import { CITIES } from "@/lib/config";
+import { namesMatch } from "@/lib/bank";
 import { safeNext, type FormState } from "@/lib/safe-next";
 
 const USERNAME_RE = /^[a-z0-9_.]{3,20}$/;
@@ -96,6 +97,13 @@ export async function updateProfile(_: FormState, form: FormData): Promise<FormS
   const supabase = await createClient();
   if (await usernameTaken(supabase, p.username, viewer.userId)) {
     return { error: `@${p.username} is taken. Try another username.`, fields };
+  }
+  // A verified seller's name must keep matching their bank account, or payouts could be redirected.
+  if (p.full_name !== viewer.profile.full_name) {
+    const { data: bank } = await supabase.from("payout_accounts").select("account_name").eq("user_id", viewer.userId).maybeSingle();
+    if (bank && !namesMatch(p.full_name, bank.account_name as string)) {
+      return { error: `Your name must match your bank account (${bank.account_name}). Change your bank details first if needed.`, fields };
+    }
   }
   const avatar = p.avatar_url === "" ? null : ownPublicUrl(p.avatar_url, "avatars", viewer.userId) ?? viewer.profile.avatar_url;
   const { error } = await supabase
