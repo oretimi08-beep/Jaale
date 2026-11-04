@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { adminMarkPayoutPaid, adminRemoveListing, adminResolveDispute, adminSendPayout, adminSetBan } from "@/app/actions/admin";
 import { toast } from "./Toaster";
+import { BRAND } from "@/lib/config";
 
 function useRun() {
   const [pending, start] = useTransition();
@@ -56,7 +57,7 @@ export function SendPayoutButton({ payoutId }: { payoutId: string }) {
 export function BanButton({ profileId, banned, name }: { profileId: string; banned: boolean; name: string }) {
   const { pending, run } = useRun();
   return banned ? (
-    <button className="btn ghost sm" disabled={pending} onClick={() => run(() => adminSetBan(profileId, false, ""), `${name} can use Jaale again.`)}>
+    <button className="btn ghost sm" disabled={pending} onClick={() => run(() => adminSetBan(profileId, false, ""), `${name} can use ${BRAND.name} again.`)}>
       Unsuspend
     </button>
   ) : (

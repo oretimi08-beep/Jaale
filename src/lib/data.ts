@@ -4,6 +4,7 @@ import { connection } from "next/server";
 import { createClient } from "./supabase/server";
 import type { Listing, Profile, ProfileLite, ProfileStats, Ratings, Viewer } from "./types";
 import type { DeptKey } from "./catalog";
+import { BRAND } from "@/lib/config";
 
 export const LISTING_SELECT =
   "*, seller:profiles!listings_seller_id_fkey(id, full_name, username, avatar_url, city, is_demo, verified_bank), photos:listing_photos(url, path, position)";
@@ -54,7 +55,7 @@ export async function activeViewer(): Promise<{ viewer: Viewer & { profile: Prof
   return { viewer: viewer as Viewer & { profile: Profile } };
 }
 
-export const BANNED_MESSAGE = "Your account is suspended. Contact Jaale support if you think this is a mistake.";
+export const BANNED_MESSAGE = `Your account is suspended. Contact ${BRAND.name} support if you think this is a mistake.`;
 
 export async function getRatings(profileId: string): Promise<Ratings> {
   const supabase = await createClient();

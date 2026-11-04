@@ -101,10 +101,10 @@ export default async function Home({ searchParams }: { searchParams: Promise<Sea
           <div className="wrap">
             <div>
               <h1>
-                Pre-loved fashion and home, <em>no wahala.</em>
+                Pre-loved items, <em>no wahala.</em>
               </h1>
               <p>
-                Buy and sell clothes, furniture and appliances across Nigeria. Your money stays protected until the item
+                Buy and sell pre-loved clothes, furniture and appliances across Nigeria. Your money stays protected until the item
                 is in your hands, and selling is free.
               </p>
               <div className="cta">

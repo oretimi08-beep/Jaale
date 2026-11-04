@@ -9,6 +9,7 @@ import { createClient } from "@/lib/supabase/server";
 import { PayoutForm } from "@/components/PayoutForm";
 import { maskAccount } from "@/lib/bank";
 import { listBanks, paystackReady, type Bank } from "@/lib/paystack";
+import { BRAND } from "@/lib/config";
 
 export const metadata = { title: "Settings" };
 
@@ -51,7 +52,7 @@ export default async function SettingsPage() {
         <h2 id="bank">Get paid</h2>
         <p className="sample" style={{ fontSize: 14 }}>
           When an order completes, we send the item price to this account. It must be in your own name, and only you and
-          the Jaale team can see it.
+          the {BRAND.name} team can see it.
         </p>
         {payout ? (
           <div className="note">

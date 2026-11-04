@@ -1,11 +1,12 @@
 // Spots messages that try to take payment or contact outside Jaale.
 // We don't block them, but both people see a warning, and the message is flagged for our team.
+import { BRAND } from "./config";
 
 const PHRASES = [
   /pay\s*(me|you)?\s*direct(ly)?/i,
   /(send|transfer|pay)\s+(it\s+|the\s+money\s+)?(in)?to\s+my\s+(account|acct|bank|opay|palmpay|kuda|moniepoint)/i,
   /\b(acct|account)\s*(no|num|number|details)\b/i,
-  /\boutside\s+(the\s+)?(app|jaale)\b/i,
+  /\boutside\s+(the\s+)?(app\b|jaale\b|jàá\s*lè)/i,
   /\boff\s+(the\s+)?app\b/i,
   /\b(whats\s?app|watsapp|telegram|signal)\b/i,
   /\b(call|text|ring)\s+me\b/i,
@@ -39,4 +40,4 @@ export function checkMessage(text: string): GuardResult {
 }
 
 export const GUARD_WARNING =
-  "This message may include contact or payment details. Payments made outside Jaale aren't protected, and you can't get a refund. Keep chats and payments in the app.";
+  `This message may include contact or payment details. Payments made outside ${BRAND.name} aren't protected, and you can't get a refund. Keep chats and payments in the app.`;

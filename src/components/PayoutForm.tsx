@@ -4,6 +4,7 @@ import { useActionState, useState } from "react";
 import { savePayoutAccount } from "@/app/actions/payout";
 import type { Bank } from "@/lib/paystack";
 import { Message, Submit } from "./AuthForms";
+import { BRAND } from "@/lib/config";
 
 export function PayoutForm({ banks, hasAccount }: { banks: Bank[]; hasAccount: boolean }) {
   const [state, action, pending] = useActionState(savePayoutAccount, undefined);
@@ -42,7 +43,7 @@ export function PayoutForm({ banks, hasAccount }: { banks: Bank[]; hasAccount: b
         <input name="account" inputMode="numeric" maxLength={10} required placeholder="0123456789" defaultValue={f.account} autoComplete="off" />
       </label>
       <label className="f">
-        Your Jaale password <span className="hint">So nobody else can change where your money goes.</span>
+        Your {BRAND.name} password <span className="hint">So nobody else can change where your money goes.</span>
         <input name="password" type="password" required autoComplete="current-password" />
       </label>
       <Submit pending={pending}>Check and save account</Submit>

@@ -11,7 +11,7 @@ const bricolage = Bricolage_Grotesque({ variable: "--font-bricolage", subsets: [
 const figtree = Figtree({ variable: "--font-figtree", subsets: ["latin"], weight: ["400", "500", "600", "700"] });
 
 export const metadata: Metadata = {
-  title: { default: `${BRAND.name} · Buy and sell pre-loved in Nigeria`, template: `%s · ${BRAND.name}` },
+  title: { default: `${BRAND.name} · Buy and sell pre-loved items in Nigeria`, template: `%s · ${BRAND.name}` },
   description:
     "Buy and sell pre-loved fashion, furniture and appliances across Nigeria. Your money stays protected until the item is in your hands.",
 };

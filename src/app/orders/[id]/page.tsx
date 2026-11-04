@@ -8,6 +8,7 @@ import { createClient } from "@/lib/supabase/server";
 import { OrderActions } from "@/components/OrderActions";
 import { AutoRefresh } from "@/components/AutoRefresh";
 import { BankReminder } from "@/components/BankReminder";
+import { BRAND } from "@/lib/config";
 
 export const metadata = { title: "Order" };
 
@@ -75,7 +76,7 @@ export default async function OrderPage({ params, searchParams }: { params: Prom
   const rank = ["pending_payment", "paid_held", "shipped", "delivered", "completed"].indexOf(s);
   const at = (n: number): Step["state"] => (rank > n ? "done" : rank === n ? "now" : "todo");
   const steps: Step[] = [
-    { title: "Payment received and held", note: order.paid_at ? `${when(order.paid_at)} · held by Jaale` : "Waiting for payment", state: rank >= 1 ? "done" : "now" },
+    { title: "Payment received and held", note: order.paid_at ? `${when(order.paid_at)} · held by ${BRAND.name}` : "Waiting for payment", state: rank >= 1 ? "done" : "now" },
     {
       title: pickup ? "Ready for collection" : bulky ? "Van on the way" : "Seller sent your item",
       note: order.shipped_at ? when(order.shipped_at)! : role === "seller" ? "Tap “I've sent it” once it's with the rider" : "The seller is getting it ready",
@@ -146,7 +147,7 @@ export default async function OrderPage({ params, searchParams }: { params: Prom
         )}
         {s === "completed" && (
           <div className="note">
-            <b>Completed.</b> {role === "seller" ? `${naira(order.item_kobo)} is yours. ${payoutNote}` : "Thanks for buying on Jaale."}
+            <b>Completed.</b> {role === "seller" ? `${naira(order.item_kobo)} is yours. ${payoutNote}` : `Thanks for buying on ${BRAND.name}.`}
           </div>
         )}
         {s === "completed" &&

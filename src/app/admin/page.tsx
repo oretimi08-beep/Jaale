@@ -5,6 +5,7 @@ import { naira } from "@/lib/money";
 import { STATUS_LABEL, type OrderStatus } from "@/lib/orders";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { BanButton, DisputeDecision, PayoutPaidButton, RemoveListingButton, SendPayoutButton } from "@/components/AdminActions";
+import { BRAND } from "@/lib/config";
 
 export const metadata = { title: "Admin" };
 
@@ -197,7 +198,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
     <main className="wrap">
       <div className="panel wide">
         <div className="shead">
-          <strong>Jaale admin</strong>
+          <strong>{BRAND.name} admin</strong>
           <Link href="/" className="x" aria-label="Close">×</Link>
         </div>
         <div className="stats" style={{ gridTemplateColumns: "repeat(5, 1fr)" }}>

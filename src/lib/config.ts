@@ -2,9 +2,9 @@
 // Change the name here and it changes everywhere.
 
 export const BRAND = {
-  name: "Jaale",
+  name: "Jàá lè",
   meaning: "“last price” in Yoruba",
-  tagline: "Pre-loved fashion and home, no wahala.",
+  tagline: "Pre-loved items, no wahala.",
 };
 
 // Buyer protection fee: ₦300 + 5% of the item price. All money is in kobo (₦1 = 100 kobo).

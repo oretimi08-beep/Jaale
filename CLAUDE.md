@@ -1,7 +1,7 @@
 # Jaale: build brief for Claude Code
 
 > **Decisions made since this brief was written (Nov 2026)**
-> - The app is named **Jaale** ("last price" in Yoruba). The name lives in `src/lib/config.ts` (`BRAND`).
+> - The app is named **Jàá lè** ("last price" in Yoruba), sold as "pre-loved items". Web address and code names stay "jaale". The name lives in `src/lib/config.ts` (`BRAND`).
 > - Sign-in is **email + password** for now (so people can change and reset passwords). Phone OTP via Termii is a paid add-on for later; a phone number is collected optionally and stored privately in `profile_private`.
 > - Payments, orders, offers, chat and reviews are UI previews only. Nothing is charged.
 > - Item, checkout, profile, sell and sign-up screens are full pages styled as panels, not slide-in sheets.

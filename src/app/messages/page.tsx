@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { Avatar } from "@/components/Avatar";
 import { getViewer } from "@/lib/data";
 import { createClient } from "@/lib/supabase/server";
+import { BRAND } from "@/lib/config";
 
 export const metadata = { title: "Messages" };
 
@@ -40,7 +41,7 @@ export default async function MessagesPage() {
           <Link href="/" className="x" aria-label="Close">×</Link>
         </div>
         <div className="note">
-          <b>Chats stay in the app.</b> Never pay a seller directly or move to WhatsApp. Payments made outside Jaale
+          <b>Chats stay in the app.</b> Never pay a seller directly or move to WhatsApp. Payments made outside {BRAND.name}
           aren&apos;t protected.
         </div>
         <div className="pbody">
