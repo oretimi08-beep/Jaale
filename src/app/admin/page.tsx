@@ -4,7 +4,7 @@ import { getViewer } from "@/lib/data";
 import { naira } from "@/lib/money";
 import { STATUS_LABEL, type OrderStatus } from "@/lib/orders";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { BanButton, DisputeDecision, PayoutPaidButton, RemoveListingButton } from "@/components/AdminActions";
+import { BanButton, DisputeDecision, PayoutPaidButton, RemoveListingButton, SendPayoutButton } from "@/components/AdminActions";
 
 export const metadata = { title: "Admin" };
 
@@ -67,36 +67,58 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
   if (tab === "payouts") {
     const { data } = await db
       .from("payouts")
-      .select("id, seller_id, amount_kobo, status, created_at, order:orders(number, listing_title), seller:profiles(full_name, username)")
-      .order("status", { ascending: false })
+      .select("id, seller_id, amount_kobo, status, attempts, last_error, paid_by, paid_at, created_at, order:orders(number, listing_title), seller:profiles(full_name, username)")
       .order("created_at", { ascending: false })
       .limit(100);
-    type P = { id: string; seller_id: string; amount_kobo: number; status: string; created_at: string; order: { number: number; listing_title: string }; seller: { full_name: string; username: string } };
-    const rows = (data ?? []) as unknown as P[];
+    type P = {
+      id: string; seller_id: string; amount_kobo: number; status: string; attempts: number; last_error: string | null;
+      paid_by: string | null; paid_at: string | null; created_at: string;
+      order: { number: number; listing_title: string }; seller: { full_name: string; username: string };
+    };
+    const order = { failed: 0, pending: 1, processing: 2, paid: 3 } as Record<string, number>;
+    const rows = ((data ?? []) as unknown as P[]).sort((a, b) => order[a.status] - order[b.status]);
     const { data: accounts } = rows.length
       ? await db.from("payout_accounts").select("user_id, bank_name, account_number, account_name").in("user_id", [...new Set(rows.map((r) => r.seller_id))])
       : { data: [] };
     const bankOf = (id: string) => (accounts ?? []).find((a) => a.user_id === id);
+    const badge: Record<string, [string, string]> = {
+      pending: ["WAITING", "bd"], processing: ["SENDING", "bd auc"], failed: ["FAILED", "bd off"], paid: ["PAID", "bd newt"],
+    };
     body = rows.length ? (
       <>
-        <p className="sample">Bank transfers aren&apos;t automatic yet. Pay the seller yourself, then mark it paid here.</p>
-        {rows.map((p) => (
-          <div key={p.id} className="seller">
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <b className="num">{naira(p.amount_kobo)}</b> to <Link className="link" href={`/u/${p.seller.username}`}>{p.seller.full_name}</Link>
-              <small>#{p.order.number} · {p.order.listing_title} · {when(p.created_at)}</small>
-              {p.status === "pending" &&
-                (bankOf(p.seller_id) ? (
-                  <small style={{ color: "var(--fg)" }}>
-                    Pay to: <b>{bankOf(p.seller_id)!.bank_name} · {bankOf(p.seller_id)!.account_number}</b> · {bankOf(p.seller_id)!.account_name}
-                  </small>
-                ) : (
-                  <small style={{ color: "var(--danger)" }}>No bank account yet. Ask the seller to add one in Settings.</small>
-                ))}
+        <p className="sample">
+          Payouts send automatically through Paystack when an order completes. If one can&apos;t send, the reason shows
+          below. Press &quot;Send now&quot; to try again, or pay the seller yourself and mark it paid.
+        </p>
+        {rows.map((p) => {
+          const bank = bankOf(p.seller_id);
+          const open = p.status === "pending" || p.status === "failed";
+          return (
+            <div key={p.id} className="seller" style={{ alignItems: "flex-start" }}>
+              <div style={{ flex: 1, minWidth: 0, display: "grid", gap: 2 }}>
+                <span>
+                  <b className="num">{naira(p.amount_kobo)}</b> to <Link className="link" href={`/u/${p.seller.username}`}>{p.seller.full_name}</Link>{" "}
+                  <span className={badge[p.status][1]}>{badge[p.status][0]}</span>
+                </span>
+                <small>#{p.order.number} · {p.order.listing_title} · {when(p.created_at)}</small>
+                {p.status === "paid" && p.paid_at && <small>Paid {p.paid_by === "manual" ? "by hand" : "through Paystack"} · {when(p.paid_at)}</small>}
+                {p.status !== "paid" &&
+                  (bank ? (
+                    <small style={{ color: "var(--fg)" }}>Bank: <b>{bank.bank_name} · {bank.account_number}</b> · {bank.account_name}</small>
+                  ) : (
+                    <small style={{ color: "var(--danger)" }}>No bank account yet. It sends automatically once the seller adds one.</small>
+                  ))}
+                {open && p.last_error && <small style={{ color: "var(--danger)" }}>{p.last_error}{p.attempts ? ` (tries: ${p.attempts})` : ""}</small>}
+              </div>
+              {open && (
+                <div style={{ display: "grid", gap: 6, flex: "none" }}>
+                  {bank && <SendPayoutButton payoutId={p.id} />}
+                  <PayoutPaidButton payoutId={p.id} />
+                </div>
+              )}
             </div>
-            {p.status === "pending" ? <PayoutPaidButton payoutId={p.id} /> : <span className="bd newt">PAID</span>}
-          </div>
-        ))}
+          );
+        })}
       </>
     ) : <p className="empty">No payouts yet.</p>;
   }

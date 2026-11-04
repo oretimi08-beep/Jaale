@@ -57,6 +57,17 @@ export default async function OrderPage({ params, searchParams }: { params: Prom
     order.status === "completed"
       ? await supabase.from("reviews").select("stars, visible_at").eq("order_id", order.id).eq("reviewer_id", viewer.userId).maybeSingle()
       : { data: null };
+  const { data: payout } =
+    role === "seller" && order.status === "completed"
+      ? await supabase.from("payouts").select("status, paid_at").eq("order_id", order.id).maybeSingle()
+      : { data: null };
+  const payoutNote = !payout
+    ? "It will be sent to your bank account."
+    : payout.status === "paid"
+      ? `Paid to your bank account${payout.paid_at ? ` on ${when(payout.paid_at)}` : ""}.`
+      : payout.status === "processing"
+        ? "It's on its way to your bank account."
+        : "It will be sent to your bank account shortly. Make sure you've added one in Settings.";
   const pickup = order.delivery_method === "self_pickup" || order.delivery_method === "pickup_point";
   const bulky = ["van", "intercity_van", "self_pickup"].includes(order.delivery_method);
 
@@ -135,7 +146,7 @@ export default async function OrderPage({ params, searchParams }: { params: Prom
         )}
         {s === "completed" && (
           <div className="note">
-            <b>Completed.</b> {role === "seller" ? `${naira(order.item_kobo)} is yours and will be sent to your bank account.` : "Thanks for buying on Jaale."}
+            <b>Completed.</b> {role === "seller" ? `${naira(order.item_kobo)} is yours. ${payoutNote}` : "Thanks for buying on Jaale."}
           </div>
         )}
         {s === "completed" &&

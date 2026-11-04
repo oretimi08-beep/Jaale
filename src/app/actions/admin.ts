@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { getViewer } from "@/lib/data";
 import { resolveDispute } from "@/lib/order-service";
+import { sendPayout } from "@/lib/payout-service";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 async function requireAdmin() {
@@ -22,9 +23,24 @@ export async function adminResolveDispute(orderId: string, outcome: "refund" | "
 
 export async function adminMarkPayoutPaid(payoutId: string): Promise<Result> {
   await requireAdmin();
-  const { data } = await createAdminClient().from("payouts").update({ status: "paid" }).eq("id", payoutId).eq("status", "pending").select("id");
+  // Not while Paystack is sending it, or the seller could be paid twice.
+  const { data } = await createAdminClient()
+    .from("payouts")
+    .update({ status: "paid", paid_by: "manual", paid_at: new Date().toISOString(), last_error: null })
+    .eq("id", payoutId)
+    .in("status", ["pending", "failed"])
+    .select("id");
   revalidatePath("/admin", "layout");
-  return data?.length ? { ok: true } : { error: "Already marked as paid." };
+  return data?.length ? { ok: true } : { error: "This payout is already paid or on its way through Paystack." };
+}
+
+export async function adminSendPayout(payoutId: string): Promise<Result> {
+  await requireAdmin();
+  const res = await sendPayout(payoutId);
+  revalidatePath("/admin", "layout");
+  if (res.status === "paid") return { ok: true };
+  if (res.status === "processing") return { ok: true };
+  return { error: res.message ?? "Couldn't send it yet." };
 }
 
 export async function adminSetBan(profileId: string, banned: boolean, reason: string): Promise<Result> {

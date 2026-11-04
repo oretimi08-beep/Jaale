@@ -122,3 +122,18 @@ export async function createRecipient(name: string, accountNumber: string, bankC
     body: { type: "nuban", name, account_number: accountNumber, bank_code: bankCode, currency: "NGN" },
   });
 }
+
+export type TransferResult = { status: string; reference: string; transfer_code?: string };
+
+/** Sends money from our Paystack balance to a seller's bank account. */
+export async function initiateTransfer(p: { amountKobo: number; recipient: string; reference: string; reason: string }): Promise<TransferResult> {
+  return call("/transfer", {
+    method: "POST",
+    body: { source: "balance", amount: p.amountKobo, recipient: p.recipient, reference: p.reference, reason: p.reason, currency: "NGN" },
+  });
+}
+
+/** Asks Paystack what happened to a transfer we sent earlier. */
+export async function verifyTransfer(reference: string): Promise<TransferResult> {
+  return call(`/transfer/verify/${encodeURIComponent(reference)}`);
+}

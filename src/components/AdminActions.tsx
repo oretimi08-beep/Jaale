@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { adminMarkPayoutPaid, adminRemoveListing, adminResolveDispute, adminSetBan } from "@/app/actions/admin";
+import { adminMarkPayoutPaid, adminRemoveListing, adminResolveDispute, adminSendPayout, adminSetBan } from "@/app/actions/admin";
 import { toast } from "./Toaster";
 
 function useRun() {
@@ -38,8 +38,17 @@ export function DisputeDecision({ orderId, refundLabel, releaseLabel }: { orderI
 export function PayoutPaidButton({ payoutId }: { payoutId: string }) {
   const { pending, run } = useRun();
   return (
-    <button className="btn sm" disabled={pending} onClick={() => confirm("Mark this payout as paid? Only do this after sending the money.") && run(() => adminMarkPayoutPaid(payoutId), "Marked as paid.")}>
-      Mark paid
+    <button className="btn ghost sm" disabled={pending} onClick={() => confirm("Mark this payout as paid by hand? Only do this after you've sent the money yourself.") && run(() => adminMarkPayoutPaid(payoutId), "Marked as paid.")}>
+      Mark paid by hand
+    </button>
+  );
+}
+
+export function SendPayoutButton({ payoutId }: { payoutId: string }) {
+  const { pending, run } = useRun();
+  return (
+    <button className="btn sm" disabled={pending} onClick={() => run(() => adminSendPayout(payoutId), "Sent to Paystack.")}>
+      {pending ? "Sending…" : "Send now"}
     </button>
   );
 }

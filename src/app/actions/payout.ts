@@ -5,6 +5,7 @@ import { activeViewer, BANNED_MESSAGE } from "@/lib/data";
 import { maskAccount, namesMatch } from "@/lib/bank";
 import { createRecipient, listBanks, paystackReady, resolveAccount } from "@/lib/paystack";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { sendDuePayouts } from "@/lib/payout-service";
 import { createClient } from "@/lib/supabase/server";
 import type { FormState } from "@/lib/safe-next";
 
@@ -61,6 +62,8 @@ export async function savePayoutAccount(_: FormState, form: FormData): Promise<F
   });
   if (saveError) return { error: "We couldn't save your bank details. Please try again.", fields };
   await admin.from("profiles").update({ verified_bank: true }).eq("id", viewer.userId);
+  // Anything owed to this seller can go out now.
+  await sendDuePayouts(viewer.userId).catch((e) => console.error("payouts after bank save", e));
 
   revalidatePath("/", "layout");
   return { ok: `Saved. You'll be paid into ${bank.name} ${maskAccount(account)} (${accountName}).` };

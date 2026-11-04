@@ -2,6 +2,7 @@ import "server-only";
 import { createAdminClient } from "./supabase/admin";
 import { nextStatus, paymentMatches, refundKobo, releaseTime, sellerPayoutKobo, type Action, type OrderStatus, type Role } from "./orders";
 import { refundPayment, verifyPayment } from "./paystack";
+import { sendPayout } from "./payout-service";
 
 // Order changes go through here, using the server's full-access key.
 // Every change is conditional on the order still being in the status we expect,
@@ -154,6 +155,9 @@ async function createPayout(order: OrderRow) {
   await db()
     .from("payouts")
     .upsert({ order_id: order.id, seller_id: order.seller_id, amount_kobo: sellerPayoutKobo(order) }, { onConflict: "order_id", ignoreDuplicates: true });
+  // Try to send it straight away. If that can't happen yet, the daily job and the admin page pick it up.
+  const { data } = await db().from("payouts").select("id").eq("order_id", order.id).maybeSingle();
+  if (data) await sendPayout(data.id as string).catch((e) => console.error("payout", order.id, e));
 }
 
 /** Releases money for every delivered order whose 2 days are up. Returns how many were released. */
