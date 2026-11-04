@@ -52,25 +52,27 @@ Keep secrets in `.env.local`, never in code. Create `.env.example` listing every
 
 ## 3. Design system (match exactly)
 
-**Look:** moss green with a golden mustard accent on a light oat-cream background. Light and dark mode are both required. Follow the system setting, with a manual toggle.
+**Look (changed Nov 2026, Timi approved):** Mandarin Orange hero, Forest Green brand colour and Crest Yellow highlights on a warm peach-cream background. Light and dark mode are both required. Follow the system setting, with a manual toggle. The tokens live in `src/app/globals.css`.
 
 ### Colour tokens
 
 | Token | Light | Dark | Used for |
 | --- | --- | --- | --- |
-| `--primary` | `#4A5A2B` moss | `#B9C88E` | Header band, main buttons, logo, icons, links |
-| `--primary-soft` | `#E6E9D6` | `#2A3120` | Selected options, spotlight panels |
-| `--accent` | `#D8B34A` mustard | `#E3C461` | Highlights, hero "List an item" button, step numbers, NEW tab tags, store rings, star ratings |
-| `--success` | `#4E7A2E` | `#A6C77A` | "Protected" ticks, money-held notes |
-| `--danger` | `#B4543A` | `#E68A70` | Discount badges, notification dots, errors |
-| `--bg` | `#F3F2EA` | `#13160F` | Page background |
-| `--surface` | `#FDFDF8` | `#1C2017` | Cards, header, sheets |
-| `--line` | `#DEDDCF` | `#30352A` | Borders |
-| `--fg` | `#22261A` | `#ECEEE3` | Main text |
-| `--muted` | `#6B6F5C` | `#A9AE98` | Secondary text |
-| `--on-primary` | `#FDFDF8` | `#13160F` | Text on primary |
+| `--primary` | `#015D47` forest green | `#5CC9A0` | Logo, main buttons, icons, links |
+| `--primary-soft` | `#DDEBE5` | `#12352B` | Selected options, spotlight panels |
+| `--accent` | `#E0F354` crest yellow | `#E0F354` | Hero "List an item" button and "no wahala", step numbers, NEW tags, store rings, logo dot |
+| `--hero` | `#FD550A` mandarin orange | `#E04A06` | Home hero band (white text) |
+| `--mark` | `#015D47` | `#E0F354` | Tab underlines, focus rings |
+| `--success` | `#0B7A57` | `#7FD3A8` | "Protected" ticks, money-held notes |
+| `--danger` | `#C2410C` | `#FF8A57` | Discount badges, notification dots, errors |
+| `--bg` | `#FFF4EA` | `#0F1A16` | Page background |
+| `--surface` | `#FFFDF9` | `#16231E` | Cards, header, sheets |
+| `--line` | `#F1DCCB` | `#26372F` | Borders |
+| `--fg` | `#14251F` | `#EEF3EE` | Main text |
+| `--muted` | `#5F6B64` | `#9FB2A9` | Secondary text |
+| `--on-primary` | `#FFFFFF` | `#0B1F19` | Text on primary |
 
-Text on `--accent` is always dark (`#1B1A10`).
+Text on `--accent` is always dark green (`#0E2A22`). Never use yellow for text or lines on a light background; it is too faint.
 
 ### Type
 - **Display / headings:** Bricolage Grotesque (700 to 800), with tight letter-spacing on big headings.
