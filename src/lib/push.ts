@@ -7,16 +7,31 @@ import type { Note } from "./notifications";
 // Sends phone notifications (web push). Free: the phone's own browser (Google, Apple, Mozilla) delivers them.
 // The two keys prove the notifications come from us. The public one is safe to share; the private one is secret.
 
-let configured = false;
+/** Tidies a key pasted into a settings screen: stray spaces, line breaks, quote marks or "=" padding. */
+function cleanKey(raw: string | undefined) {
+  return (raw ?? "")
+    .replace(/\s+/g, "")
+    .replace(/^["']+|["']+$/g, "")
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=+$/, "");
+}
+
+let state: "unset" | "ok" | "bad" = "unset";
+/** True when notifications can be sent. Never throws: a bad key just turns notifications off and logs why. */
 export function pushReady(): boolean {
-  const pub = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
-  const priv = process.env.VAPID_PRIVATE_KEY;
+  if (state !== "unset") return state === "ok";
+  const pub = cleanKey(process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY);
+  const priv = cleanKey(process.env.VAPID_PRIVATE_KEY);
   if (!pub || !priv) return false;
-  if (!configured) {
-    webpush.setVapidDetails(process.env.VAPID_SUBJECT || "https://jaale.vercel.app", pub, priv);
-    configured = true;
+  try {
+    webpush.setVapidDetails(process.env.VAPID_SUBJECT?.trim() || "https://jaale.vercel.app", pub, priv);
+    state = "ok";
+  } catch (e) {
+    console.error("Notifications are off: the VAPID keys are not valid.", (e as Error).message);
+    state = "bad";
   }
-  return true;
+  return state === "ok";
 }
 
 /**

@@ -44,7 +44,7 @@ export default async function MessagesPage() {
         </div>
         <PushNudge ready={pushReady()} />
         <div className="note">
-          <b>Chats stay in the app.</b> Never pay a seller directly or move to WhatsApp. Payments made outside {BRAND.name}
+          <b>Chats stay in the app.</b> Never pay a seller directly or move to WhatsApp. Payments made outside {BRAND.name}{" "}
           aren&apos;t protected.
         </div>
         <div className="pbody">
