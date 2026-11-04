@@ -4,6 +4,8 @@ import { Avatar } from "@/components/Avatar";
 import { getViewer } from "@/lib/data";
 import { createClient } from "@/lib/supabase/server";
 import { BRAND } from "@/lib/config";
+import { PushNudge } from "@/components/Push";
+import { pushReady } from "@/lib/push";
 
 export const metadata = { title: "Messages" };
 
@@ -40,6 +42,7 @@ export default async function MessagesPage() {
           <strong>Messages</strong>
           <Link href="/" className="x" aria-label="Close">×</Link>
         </div>
+        <PushNudge ready={pushReady()} />
         <div className="note">
           <b>Chats stay in the app.</b> Never pay a seller directly or move to WhatsApp. Payments made outside {BRAND.name}
           aren&apos;t protected.

@@ -14,6 +14,7 @@ export const metadata: Metadata = {
   title: { default: `${BRAND.name} · Buy and sell pre-loved items in Nigeria`, template: `%s · ${BRAND.name}` },
   description:
     "Buy and sell pre-loved fashion, furniture and appliances across Nigeria. Your money stays protected until the item is in your hands.",
+  appleWebApp: { capable: true, title: BRAND.name, statusBarStyle: "default" },
 };
 
 export const viewport: Viewport = {

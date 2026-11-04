@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Suspense } from "react";
 import { getSavedIds, getViewer, unreadCount } from "@/lib/data";
+import { PushSync } from "./Push";
 import { BRAND } from "@/lib/config";
 import { DeptTabs } from "./DeptTabs";
 import { SearchBox } from "./SearchBox";
@@ -22,6 +23,7 @@ export async function Header() {
 
   return (
     <header className="site-header">
+      <PushSync userId={viewer?.profile ? viewer.userId : null} />
       <div className="wrap bar">
         <Logo />
         <Suspense fallback={<div className="search" />}>

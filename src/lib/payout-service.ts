@@ -3,6 +3,8 @@ import { createAdminClient } from "./supabase/admin";
 import { naira } from "./money";
 import { canAttempt, explainTransferError, fromTransferStatus, transferReference, type PayoutStatus } from "./payouts";
 import { createRecipient, initiateTransfer, paystackReady, verifyTransfer } from "./paystack";
+import { orderNote } from "./notifications";
+import { notify } from "./push";
 
 // Sends sellers their money through Paystack Transfers.
 // Every change is conditional on the payout still being in the state we read, so two
@@ -27,6 +29,28 @@ async function note(id: string, changes: Partial<PayoutRow> & Record<string, unk
   return q.select("id");
 }
 
+/** Marks a payout paid (only once) and tells the seller. */
+async function setPaid(column: "id" | "transfer_reference", value: string, paidBy: "paystack" | "manual" = "paystack") {
+  const { data } = await db()
+    .from("payouts")
+    .update({ status: "paid", paid_at: new Date().toISOString(), paid_by: paidBy, last_error: null })
+    .eq(column, value)
+    .neq("status", "paid")
+    .select("id");
+  await announcePaid((data ?? []).map((r) => r.id as string));
+  return !!data?.length;
+}
+
+/** Lets each seller know their money reached the bank. */
+export async function announcePaid(payoutIds: string[]) {
+  for (const id of payoutIds) {
+    const { data } = await db().from("payouts").select("seller_id, amount_kobo, order_id, orders(listing_title)").eq("id", id).maybeSingle();
+    if (!data) continue;
+    const order = data.orders as unknown as { listing_title: string } | null;
+    notify(data.seller_id as string, orderNote("paid_out", { item: order?.listing_title ?? "your item", kobo: data.amount_kobo as number, orderId: data.order_id as string }));
+  }
+}
+
 /** If an earlier attempt reached Paystack, find out how it ended before sending again. */
 async function syncLastAttempt(p: PayoutRow): Promise<"paid" | "processing" | "retry"> {
   if (!p.transfer_reference) return "retry";
@@ -34,7 +58,7 @@ async function syncLastAttempt(p: PayoutRow): Promise<"paid" | "processing" | "r
     const t = await verifyTransfer(p.transfer_reference);
     const status = fromTransferStatus(t.status);
     if (status === "paid") {
-      await note(p.id, { status: "paid", paid_at: new Date().toISOString(), paid_by: "paystack", last_error: null });
+      await setPaid("id", p.id);
       return "paid";
     }
     if (status === "processing") {
@@ -95,7 +119,7 @@ export async function sendPayout(payoutId: string): Promise<{ status: PayoutStat
       reason: `Jaale order #${order?.number ?? ""}: ${order?.listing_title ?? "item"}`.slice(0, 100),
     });
     const status = fromTransferStatus(t.status);
-    if (status === "paid") await note(p.id, { status: "paid", paid_at: new Date().toISOString(), paid_by: "paystack" });
+    if (status === "paid") await setPaid("id", p.id);
     else if (status === "failed") await note(p.id, { status: "failed", last_error: `Paystack: ${t.status}` });
     else if (t.status === "otp") await note(p.id, { last_error: explainTransferError("otp") });
     return { status, message: status === "processing" ? `${naira(p.amount_kobo)} sent to Paystack.` : undefined };
@@ -131,13 +155,13 @@ export async function sendDuePayouts(sellerId?: string): Promise<{ tried: number
 /** Records Paystack's final word on a transfer (from the webhook). */
 export async function markTransfer(reference: string, outcome: "success" | "failed" | "reversed", reason?: string) {
   const status = fromTransferStatus(outcome);
+  if (status === "paid") {
+    await setPaid("transfer_reference", reference);
+    return;
+  }
   await db()
     .from("payouts")
-    .update(
-      status === "paid"
-        ? { status: "paid", paid_at: new Date().toISOString(), paid_by: "paystack", last_error: null }
-        : { status: "failed", last_error: `Paystack ${outcome} the transfer${reason ? `: ${reason}` : ""}. It will be retried.` },
-    )
+    .update({ status: "failed", last_error: `Paystack ${outcome} the transfer${reason ? `: ${reason}` : ""}. It will be retried.` })
     .eq("transfer_reference", reference)
     .neq("status", "paid");
 }

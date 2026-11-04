@@ -10,6 +10,10 @@ import { PayoutForm } from "@/components/PayoutForm";
 import { maskAccount } from "@/lib/bank";
 import { listBanks, paystackReady, type Bank } from "@/lib/paystack";
 import { BRAND } from "@/lib/config";
+import { NotificationSettings } from "@/components/Push";
+import { pushReady } from "@/lib/push";
+import { DEFAULT_CHOICES } from "@/lib/notifications";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 export const metadata = { title: "Settings" };
 
@@ -19,9 +23,10 @@ export default async function SettingsPage() {
   if (!viewer.profile) redirect("/signup/profile?next=/settings");
   const p = viewer.profile;
   const supabase = await createClient();
-  const [{ data: priv }, { data: payout }] = await Promise.all([
+  const [{ data: priv }, { data: payout }, { data: notify }] = await Promise.all([
     supabase.from("profile_private").select("phone").eq("id", p.id).maybeSingle(),
     supabase.from("payout_accounts").select("bank_name, account_number, account_name, verified_at").eq("user_id", p.id).maybeSingle(),
+    createAdminClient().from("notification_settings").select("offers, messages, orders").eq("user_id", p.id).maybeSingle(),
   ]);
   let banks: Bank[] = [];
   if (paystackReady()) banks = await listBanks().catch(() => []);
@@ -47,6 +52,10 @@ export default async function SettingsPage() {
             phone: (priv?.phone as string) ?? null,
           }}
         />
+
+        <hr style={{ border: 0, borderTop: "1px solid var(--line)", width: "100%" }} />
+        <h2 id="notifications">Notifications</h2>
+        <NotificationSettings initial={notify ?? DEFAULT_CHOICES} ready={pushReady()} />
 
         <hr style={{ border: 0, borderTop: "1px solid var(--line)", width: "100%" }} />
         <h2 id="bank">Get paid</h2>

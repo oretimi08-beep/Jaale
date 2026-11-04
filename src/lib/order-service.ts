@@ -3,6 +3,8 @@ import { createAdminClient } from "./supabase/admin";
 import { nextStatus, paymentMatches, refundKobo, releaseTime, sellerPayoutKobo, type Action, type OrderStatus, type Role } from "./orders";
 import { refundPayment, verifyPayment } from "./paystack";
 import { sendPayout } from "./payout-service";
+import { orderNote, type OrderEvent } from "./notifications";
+import { notify } from "./push";
 
 // Order changes go through here, using the server's full-access key.
 // Every change is conditional on the order still being in the status we expect,
@@ -42,6 +44,10 @@ const db = () => createAdminClient();
 async function load(id: string): Promise<OrderRow | null> {
   const { data } = await db().from("orders").select("*").eq("id", id).maybeSingle();
   return (data as OrderRow) ?? null;
+}
+
+function tell(userId: string, event: OrderEvent, order: OrderRow) {
+  notify(userId, orderNote(event, { item: order.listing_title, kobo: sellerPayoutKobo(order), orderId: order.id }));
 }
 
 async function issueRefund(order: OrderRow, reason: string) {
@@ -95,6 +101,7 @@ export async function confirmPayment(
     await issueRefund(order, "Someone else bought this item first.");
     return { status: "refunded", message: "Sorry, someone else paid for this item a moment before you. Your money is being refunded in full." };
   }
+  if (result === "paid") tell(order.seller_id, "sold", order);
   const fresh = await load(order.id);
   return { status: fresh?.status ?? order.status };
 }
@@ -132,6 +139,12 @@ export async function applyAction(
     .eq("status", order.status)
     .select("id");
   if (!updated?.length) return { ok: false, reason: "This order was just updated. Refresh and try again." };
+
+  if (action === "ship") tell(order.buyer_id, "shipped", order);
+  if (action === "deliver") tell(order.buyer_id, "delivered", order);
+  if (action === "confirm") tell(order.seller_id, "confirmed", order);
+  if (action === "report") tell(order.seller_id, "reported", order);
+  if (action === "cancel" && order.status === "paid_held" && role === "seller") tell(order.buyer_id, "cancelled", order);
 
   if (action === "confirm") await createPayout(order);
   if (action === "report") {
@@ -179,6 +192,7 @@ export async function autoRelease(now: Date = new Date()): Promise<number> {
       .eq("status", "delivered")
       .select("id");
     if (updated?.length) {
+      tell(order.seller_id, "released", order);
       await createPayout(order);
       count++;
     }
@@ -227,6 +241,8 @@ export async function resolveDispute(orderId: string, outcome: "refund" | "relea
     .from("disputes")
     .update({ status: outcome === "refund" ? "resolved_refund" : "resolved_release", resolution: note.slice(0, 500) || null })
     .eq("order_id", order.id);
+  tell(order.buyer_id, outcome === "refund" ? "decided_refund_buyer" : "decided_release_buyer", order);
+  tell(order.seller_id, outcome === "refund" ? "decided_refund_seller" : "decided_release_seller", order);
   if (outcome === "refund") await issueRefund(order, "Our team refunded you after reviewing the problem.");
   else await createPayout(order);
   return { ok: true };

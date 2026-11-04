@@ -316,3 +316,14 @@ label.f .hint { font-weight: 400; color: var(--muted); font-size: 12.5px; }
 .menu hr { border: 0; border-top: 1px solid var(--line); margin: 4px 0; width: 100%; }
 .spinner { width: 18px; height: 18px; border-radius: 50%; border: 2px solid currentColor; border-right-color: transparent; animation: spin 0.7s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
+
+/* Phone notifications */
+.notify-choices { border: 0; padding: 0; margin: 0; display: grid; gap: 8px; }
+.notify-choices:disabled { opacity: .55; }
+.check-row { display: flex; gap: 12px; align-items: flex-start; padding: 10px 12px; border: 1px solid var(--line); border-radius: var(--r); background: var(--surface); cursor: pointer; }
+.check-row input { width: 20px; height: 20px; margin-top: 2px; accent-color: var(--primary); flex: none; }
+.check-row b { display: block; font-size: 15px; }
+.check-row small { color: var(--muted); font-size: 13px; }
+.steps-list { margin: 8px 0 0; padding-left: 20px; display: grid; gap: 4px; }
+.push-nudge { display: flex; gap: 10px 14px; align-items: center; justify-content: space-between; flex-wrap: wrap; margin-bottom: 14px; }
+.push-nudge-actions { display: flex; gap: 8px; }

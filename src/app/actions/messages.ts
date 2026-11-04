@@ -6,6 +6,8 @@ import { activeViewer, BANNED_MESSAGE, getListing } from "@/lib/data";
 import { checkMessage } from "@/lib/contact-guard";
 import { nairaInputToKobo, naira } from "@/lib/money";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { newMessage, newOffer, offerAnswered } from "@/lib/notifications";
+import { notify } from "@/lib/push";
 
 // Lowest offer allowed, as a share of the asking price. Stops insulting lowballs.
 const MIN_OFFER_SHARE = 0.5;
@@ -46,6 +48,11 @@ async function loadConversation(conversationId: string, userId: string) {
   return { c, admin, role: c.buyer_id === userId ? ("buyer" as const) : ("seller" as const) };
 }
 
+async function itemTitle(admin: ReturnType<typeof createAdminClient>, listingId: string) {
+  const { data } = await admin.from("listings").select("title").eq("id", listingId).maybeSingle();
+  return (data?.title as string) ?? "your item";
+}
+
 async function touch(admin: ReturnType<typeof createAdminClient>, conversationId: string, role: "buyer" | "seller") {
   const now = new Date().toISOString();
   await admin
@@ -68,6 +75,12 @@ export async function sendMessage(conversationId: string, body: string): Promise
     .insert({ conversation_id: conversationId, sender_id: viewer.userId, body: text, flagged: guard.flagged });
   if (insertError) return { error: "Message not sent. Try again." };
   await touch(ctx.admin, conversationId, ctx.role);
+  notify(ctx.role === "buyer" ? ctx.c.seller_id : ctx.c.buyer_id, newMessage({
+    from: viewer.profile.full_name,
+    item: await itemTitle(ctx.admin, ctx.c.listing_id),
+    text,
+    conversationId,
+  }));
   revalidatePath(`/messages/${conversationId}`);
   return { ok: true, flagged: guard.flagged };
 }
@@ -77,7 +90,7 @@ export async function makeOffer(conversationId: string, amount: string): Promise
   if (error) return { error: error === "banned" ? BANNED_MESSAGE : "Please sign in again." };
   const ctx = await loadConversation(conversationId, viewer.userId);
   if (!ctx) return { error: "Conversation not found." };
-  const { data: listing } = await ctx.admin.from("listings").select("price_kobo, status").eq("id", ctx.c.listing_id).single();
+  const { data: listing } = await ctx.admin.from("listings").select("title, price_kobo, status").eq("id", ctx.c.listing_id).single();
   if (!listing || listing.status !== "active") return { error: "This item isn't for sale any more." };
 
   const kobo = nairaInputToKobo(amount);
@@ -96,6 +109,13 @@ export async function makeOffer(conversationId: string, amount: string): Promise
   });
   if (insertError) return { error: "Offer not sent. Try again." };
   await touch(ctx.admin, conversationId, ctx.role);
+  notify(ctx.role === "buyer" ? ctx.c.seller_id : ctx.c.buyer_id, newOffer({
+    from: viewer.profile.full_name,
+    item: listing.title,
+    kobo,
+    counter: ctx.role === "seller",
+    conversationId,
+  }));
   revalidatePath(`/messages/${conversationId}`);
   return { ok: true };
 }
@@ -104,7 +124,7 @@ export async function respondToOffer(messageId: string, answer: "accepted" | "de
   const { viewer, error } = await activeViewer();
   if (error) return { error: error === "banned" ? BANNED_MESSAGE : "Please sign in again." };
   const admin = createAdminClient();
-  const { data: m } = await admin.from("messages").select("id, conversation_id, sender_id, offer_status").eq("id", messageId).maybeSingle();
+  const { data: m } = await admin.from("messages").select("id, conversation_id, sender_id, offer_status, offer_kobo").eq("id", messageId).maybeSingle();
   if (!m || m.offer_status !== "pending") return { error: "This offer has already been answered." };
   const ctx = await loadConversation(m.conversation_id, viewer.userId);
   if (!ctx) return { error: "Conversation not found." };
@@ -123,6 +143,16 @@ export async function respondToOffer(messageId: string, answer: "accepted" | "de
     await admin.from("messages").update({ offer_status: "withdrawn" }).eq("conversation_id", m.conversation_id).eq("offer_status", "accepted").neq("id", m.id);
   }
   await touch(admin, m.conversation_id, ctx.role);
+  if (answer !== "withdrawn") {
+    notify(m.sender_id, offerAnswered({
+      from: viewer.profile.full_name,
+      item: await itemTitle(admin, ctx.c.listing_id),
+      kobo: m.offer_kobo,
+      answer,
+      youAreBuyer: m.sender_id === ctx.c.buyer_id,
+      conversationId: m.conversation_id,
+    }));
+  }
   revalidatePath(`/messages/${m.conversation_id}`);
   return { ok: true };
 }

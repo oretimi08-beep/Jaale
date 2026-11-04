@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { getViewer } from "@/lib/data";
 import { resolveDispute } from "@/lib/order-service";
-import { sendPayout } from "@/lib/payout-service";
+import { announcePaid, sendPayout } from "@/lib/payout-service";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 async function requireAdmin() {
@@ -31,6 +31,7 @@ export async function adminMarkPayoutPaid(payoutId: string): Promise<Result> {
     .in("status", ["pending", "failed"])
     .select("id");
   revalidatePath("/admin", "layout");
+  if (data?.length) await announcePaid(data.map((r) => r.id as string));
   return data?.length ? { ok: true } : { error: "This payout is already paid or on its way through Paystack." };
 }
 

@@ -6,6 +6,8 @@ import { STATUS_LABEL } from "@/lib/orders";
 import { autoRelease, type OrderRow } from "@/lib/order-service";
 import { createClient } from "@/lib/supabase/server";
 import { BankReminder } from "@/components/BankReminder";
+import { PushNudge } from "@/components/Push";
+import { pushReady } from "@/lib/push";
 
 export const metadata = { title: "My orders" };
 
@@ -33,6 +35,7 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
           <strong>My orders</strong>
           <Link href="/" className="x" aria-label="Close">×</Link>
         </div>
+        <PushNudge ready={pushReady()} />
         <nav className="ptabs" aria-label="Order type">
           <Link href="/orders" aria-current={tab === "purchases" ? "page" : undefined}>Buying</Link>
           <Link href="/orders?tab=sales" aria-current={tab === "sales" ? "page" : undefined}>Selling</Link>
